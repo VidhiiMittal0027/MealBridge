@@ -1,1 +1,551 @@
-/* Shared styling is in src/index.css */
+:root {
+  --surface-soft: rgba(255, 255, 255, 0.82);
+}
+
+.home-shell {
+  min-height: 100vh;
+  padding: 0 0 80px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 7% 60px;
+  align-items: center;
+}
+
+.hero-copy {
+  max-width: 620px;
+}
+
+.eyebrow-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: rgba(255, 138, 0, 0.12);
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.hero-title,
+.about-title {
+  font-size: clamp(3rem, 5vw, 4.8rem);
+  line-height: 0.98;
+  margin: 24px 0 24px;
+}
+
+.hero-description,
+.about-description {
+  font-size: 1.05rem;
+  line-height: 1.9;
+  max-width: 620px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+
+.hero-actions,
+.cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.hero-cta {
+  border-radius: 999px;
+  padding: 16px 28px;
+  min-width: 170px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.hero-cta-primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  box-shadow: 0 24px 50px rgba(255, 138, 0, 0.24);
+}
+
+.hero-cta-secondary {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 138, 0, 0.16);
+}
+
+.hero-cta:hover,
+.primary-button:hover,
+.ghost-button:hover {
+  transform: translateY(-2px);
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.hero-badges span {
+  font-size: 0.93rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 138, 0, 0.12);
+}
+
+.hero-visual {
+  position: relative;
+  min-height: 520px;
+  border-radius: 36px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.82));
+  border: 1px solid rgba(255, 138, 0, 0.18);
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+
+.visual-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(255, 138, 0, 0.22), transparent 24%),
+    radial-gradient(circle at 85% 15%, rgba(60, 207, 207, 0.14), transparent 20%);
+  pointer-events: none;
+}
+
+.visual-panel {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: grid;
+  gap: 22px;
+}
+
+.visual-header {
+  display: flex;
+  gap: 12px;
+}
+
+.visual-header span {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 138, 0, 0.85);
+}
+
+.visual-map {
+  flex: 1;
+  min-height: 320px;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 138, 0, 0.18), transparent 34%),
+    radial-gradient(circle at 80% 20%, rgba(60, 207, 207, 0.16), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.7));
+  border-radius: 30px;
+  border: 1px solid rgba(255, 138, 0, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.visual-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 24px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 138, 0, 0.14);
+}
+
+.visual-info div {
+  display: grid;
+  gap: 6px;
+}
+
+.visual-info strong {
+  font-size: 1rem;
+}
+
+.visual-info small {
+  color: var(--text-secondary);
+}
+
+.visual-badge {
+  position: absolute;
+  padding: 14px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--teal));
+  box-shadow: 0 20px 40px rgba(27, 27, 27, 0.16);
+}
+
+.badge-top {
+  top: 24px;
+  right: 24px;
+}
+
+.badge-left {
+  left: 24px;
+  bottom: 24px;
+}
+
+.badge-bottom {
+  right: 24px;
+  bottom: 24px;
+}
+
+.section {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 72px 7%;
+}
+
+.center-section {
+  padding-top: 40px;
+}
+
+.section-header {
+  max-width: 780px;
+  margin: 0 auto 42px;
+  text-align: left;
+}
+
+.section-header.center {
+  text-align: center;
+}
+
+.section-header h2 {
+  font-size: clamp(2.2rem, 3vw, 3.65rem);
+  margin: 18px 0 0;
+  line-height: 1.1;
+}
+
+.partner-marquee {
+  overflow: hidden;
+  padding: 14px 0 0;
+}
+
+.marquee-track {
+  display: flex;
+  gap: 18px;
+  animation: marquee 18s linear infinite;
+}
+
+.partner-pill {
+  min-width: 180px;
+  padding: 18px 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 138, 0, 0.12);
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.crisis-section {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 36px;
+  border: 1px solid rgba(255, 138, 0, 0.14);
+  box-shadow: var(--shadow);
+  padding: 64px 7%;
+}
+
+.crisis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.crisis-card {
+  display: grid;
+  gap: 18px;
+  padding: 32px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 138, 0, 0.12);
+  box-shadow: var(--shadow);
+  color: var(--text-primary);
+}
+
+.crisis-icon {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: rgba(255, 138, 0, 0.12);
+  font-size: 1.75rem;
+}
+
+.crisis-card h3 {
+  margin: 0 0 12px;
+}
+
+.crisis-card p {
+  margin: 0 0 18px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.crisis-link {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.feature-card {
+  border-radius: 32px;
+  padding: 32px;
+  box-shadow: var(--shadow);
+  min-height: 240px;
+}
+
+.feature-mark {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 22px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
+  font-weight: 800;
+}
+
+.feature-card h3 {
+  margin: 0 0 16px;
+}
+
+.feature-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.9;
+}
+
+.faq-section {
+  padding-top: 0;
+}
+
+.faq-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.accordion-card {
+  border-radius: 28px;
+  padding: 24px 28px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 138, 0, 0.12);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.accordion-card:hover {
+  transform: translateY(-2px);
+}
+
+.accordion-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.accordion-title h3 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.accordion-card p {
+  margin: 18px 0 0;
+  color: var(--text-secondary);
+  line-height: 1.9;
+}
+
+.accordion-content {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.accordion-card.open .accordion-content {
+  max-height: 220px;
+  opacity: 1;
+}
+
+.cta-section {
+  padding-top: 0;
+}
+
+.cta-card {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 28px;
+  align-items: center;
+  padding: 42px 42px 44px;
+  border-radius: 32px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
+  border: 1px solid rgba(255, 138, 0, 0.15);
+  box-shadow: var(--shadow);
+}
+
+.cta-card h2 {
+  margin: 0 0 18px;
+  font-size: clamp(2.25rem, 3vw, 3.5rem);
+}
+
+.cta-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.9;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 1300;
+}
+
+.role-modal {
+  width: min(540px, calc(100% - 36px));
+  background: #fff;
+  border-radius: 32px;
+  padding: 34px;
+  box-shadow: 0 38px 90px rgba(27, 27, 27, 0.16);
+}
+
+.role-modal h3 {
+  margin: 0 0 12px;
+}
+
+.role-modal p {
+  margin: 0 0 28px;
+  color: var(--text-secondary);
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.role-card-modal {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 138, 0, 0.15);
+  padding: 20px;
+  font-weight: 700;
+  background: #fff;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.role-card-modal:hover {
+  transform: translateY(-2px);
+}
+
+.role-card-modal.active {
+  background: linear-gradient(135deg, rgba(255, 138, 0, 0.16), rgba(255, 184, 77, 0.22));
+  border-color: rgba(255, 138, 0, 0.28);
+}
+
+.role-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.role-actions .cancel,
+.role-actions .confirm {
+  padding: 14px 24px;
+  border-radius: 999px;
+}
+
+.cancel {
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--text-primary);
+}
+
+.confirm {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
+}
+
+@media (max-width: 1024px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 60px 6% 40px;
+  }
+
+  .hero-visual {
+    min-height: 420px;
+  }
+
+  .feature-grid,
+  .crisis-grid,
+  .cta-card,
+  .role-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero {
+    padding: 50px 5% 30px;
+  }
+
+  .section,
+  .crisis-section {
+    padding: 50px 5%;
+  }
+
+  .section-header,
+  .cta-card {
+    text-align: center;
+  }
+
+  .hero-actions,
+  .cta-actions {
+    justify-content: center;
+  }
+
+  .hero-badges {
+    justify-content: center;
+  }
+
+  .visual-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .section-header.center,
+  .hero-copy {
+    text-align: center;
+  }
+}

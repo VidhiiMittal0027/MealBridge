@@ -1,2 +1,102 @@
-import Navbar from "../components/Navbar";import Footer from "../components/Footer";import "./ImpactDashboard.css";
-function ImpactDashboard(){const activities=[{food:"Artisan Bread Assortment",meals:"45 Meals",date:"June 12, 2026",receiver:"City Hope Kitchen",status:"Completed"},{food:"Prepared Salad Trays",meals:"20 Meals",date:"June 10, 2026",receiver:"Youth Center East",status:"In Transit"},{food:"Roasted Vegetable Mix",meals:"35 Meals",date:"June 8, 2026",receiver:"Bridge Shelter",status:"Pending"}];return <><Navbar/><main className="dashboard"><header className="dashboard-header"><div><p className="eyebrow">DONOR DASHBOARD</p><h1>Your Impact Dashboard</h1><p className="subtitle">Real-time overview of your contribution to reducing food waste.</p></div><div className="account-card">👤 <b>Fresh Bites Catering</b></div></header><section className="stats-grid"><article className="stat-card"><p>🍽️ Meals Donated</p><h2>247</h2><span className="positive">↑ 12% from last month</span></article><article className="stat-card"><p>♻️ Food Waste Prevented</p><h2>1.8 tons</h2><span className="positive">↑ 0.4 tons this month</span></article><article className="stat-card"><p>🏘️ Communities Served</p><h2>12</h2><span>Regional outreach centers</span></article><article className="stat-card"><p>❤️ People Fed</p><h2>856</h2><span className="positive">↑ 85 people this month</span></article></section><section className="dashboard-grid"><div><article className="panel"><h2>Impact Timeline</h2><p>Your rescued meals over the last six months</p><div className="chart">{["jan","feb","mar","apr","may","jun"].map(m=><div className="bar-group" key={m}><div className={"bar "+m}/><span>{m.toUpperCase()}</span></div>)}</div></article><article className="panel"><h2>Recent Activity</h2>{activities.map(a=><div className="activity-card" key={a.food}><div>🥗</div><div className="activity-details"><h3>{a.food}</h3><p>{a.meals} • {a.date}</p></div><div className="activity-status"><b>{a.receiver}</b><span className={"status "+a.status.toLowerCase().replace(" ","-")}>{a.status}</span></div></div>)}</article></div><aside className="sidebar-content"><article className="recognition-card"><h2>Badges & Recognition</h2><div className="badges"><div className="badge">🏆<br/>Food Rescuer</div><div className="badge">⭐<br/>Community Champion</div></div><div className="milestone"><h3>🎉 New Milestone!</h3><p>You rescued over 500 meals this year!</p><button className="btn">Share Achievement</button></div></article><article className="mission-card"><h2>Continue your mission today</h2><p>12 potential NGOs are waiting for surplus food.</p><a className="white-button" href="/donate-food">List New Surplus →</a></article><article className="next-steps"><h2>Next Suggested Steps</h2><div className="step">✓ Complete your donor profile.</div><div className="step">○ Schedule a routine pickup.</div></article></aside></section></main><Footer/></>}export default ImpactDashboard;
+import DashboardLayout from "../components/DashboardLayout";
+import "./ImpactDashboard.css";
+
+const activities = [
+  { food: "Artisan Bread Assortment", meals: "45 Meals", date: "June 12, 2026", receiver: "City Hope Kitchen", status: "Completed" },
+  { food: "Prepared Salad Trays", meals: "20 Meals", date: "June 10, 2026", receiver: "Youth Center East", status: "In Transit" },
+  { food: "Roasted Vegetable Mix", meals: "35 Meals", date: "June 8, 2026", receiver: "Bridge Shelter", status: "Pending" }
+];
+
+export default function ImpactDashboard() {
+  return (
+    <DashboardLayout>
+      <div className="impact-portal-content">
+        <header className="dashboard-header-custom">
+          <div>
+            <p className="eyebrow">DASHBOARD</p>
+            <h1>Your Impact Dashboard</h1>
+            <p className="subtitle">Real-time overview of your contribution to reducing food waste.</p>
+          </div>
+        </header>
+
+        <section className="stats-grid">
+          <article className="stat-card">
+            <p>🍽️ Meals Donated</p>
+            <h2>247</h2>
+            <span className="positive">↑ 12% from last month</span>
+          </article>
+          <article className="stat-card">
+            <p>♻️ Food Waste Prevented</p>
+            <h2>1.8 tons</h2>
+            <span className="positive">↑ 0.4 tons this month</span>
+          </article>
+          <article className="stat-card">
+            <p>🏘️ Communities Served</p>
+            <h2>12</h2>
+            <span>Regional outreach centers</span>
+          </article>
+          <article className="stat-card">
+            <p>❤️ People Fed</p>
+            <h2>856</h2>
+            <span className="positive">↑ 85 people this month</span>
+          </article>
+        </section>
+
+        <section className="dashboard-grid">
+          <div className="main-reports">
+            <article className="panel">
+              <h2>Impact Timeline</h2>
+              <p>Your rescued meals over the last six months</p>
+              <div className="chart">
+                {["jan", "feb", "mar", "apr", "may", "jun"].map(m => (
+                  <div className="bar-group" key={m}>
+                    <div className={"bar " + m} />
+                    <span>{m.toUpperCase()}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="panel">
+              <h2>Recent Rescued Food</h2>
+              {activities.map(a => (
+                <div className="activity-card" key={a.food}>
+                  <div className="activity-icon">🥗</div>
+                  <div className="activity-details">
+                    <h3>{a.food}</h3>
+                    <p>{a.meals} • {a.date}</p>
+                  </div>
+                  <div className="activity-status">
+                    <b>{a.receiver}</b>
+                    <span className={"status " + a.status.toLowerCase().replace(" ", "-")}>{a.status}</span>
+                  </div>
+                </div>
+              ))}
+            </article>
+          </div>
+
+          <aside className="sidebar-content-custom">
+            <article className="recognition-card">
+              <h2>Badges & Recognition</h2>
+              <div className="badges">
+                <div className="badge">🏆<br />Food Rescuer</div>
+                <div className="badge">⭐<br />Community Champion</div>
+              </div>
+              <div className="milestone">
+                <h3>🎉 New Milestone!</h3>
+                <p>You rescued over 500 meals this year!</p>
+                <button className="btn">Share Achievement</button>
+              </div>
+            </article>
+
+            <article className="mission-card">
+              <h2>Continue your mission today</h2>
+              <p>12 potential NGOs are waiting for surplus food.</p>
+              <a className="white-button" href="/donate-food">List New Surplus →</a>
+            </article>
+          </aside>
+        </section>
+      </div>
+    </DashboardLayout>
+  );
+}

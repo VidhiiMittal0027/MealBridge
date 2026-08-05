@@ -1,1 +1,21 @@
-import Navbar from "../components/Navbar";import Footer from "../components/Footer";import "./DeliveryTracking.css";export default function DeliveryTracking(){return <><Navbar/><main className="section"><p className="eyebrow">LIVE DELIVERY</p><h1>Donation Tracking</h1><article className="panel"><h2>Fresh Bites → City Hope Kitchen</h2><p>45 meals · Volunteer assigned</p><div className="result"><h3>Current status: Driver assigned</h3><p>Estimated pickup: 15 minutes</p></div></article></main><Footer/></>}
+import DashboardLayout from "../components/DashboardLayout";
+import "./DeliveryTracking.css";
+
+export default function DeliveryTracking() {
+  return (
+    <DashboardLayout>
+      <div className="portal-content">
+        <p className="eyebrow">LIVE DELIVERY</p>
+        <h1>Donation Tracking</h1>
+        <article className="panel">
+          <h2>Fresh Bites → City Hope Kitchen</h2>
+          <p>45 meals · Volunteer assigned</p>
+          <div className="result">
+            <h3>Current status: Driver assigned</h3>
+            <p>Estimated pickup: 15 minutes</p>
+          </div>
+        </article>
+      </div>
+    </DashboardLayout>
+  );
+}

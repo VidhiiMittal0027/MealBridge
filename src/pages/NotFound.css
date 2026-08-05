@@ -1,0 +1,37 @@
+.static-page {
+  padding: 80px 24px;
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: center;
+}
+.static-content {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.06);
+  padding: 48px;
+}
+.static-content .eyebrow {
+  color: #ff8a00;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.static-content h1 {
+  margin-bottom: 24px;
+  font-size: clamp(2rem, 2.5vw, 3rem);
+}
+.static-content p {
+  margin-bottom: 24px;
+  line-height: 1.8;
+  color: #333;
+}
+.static-content .btn {
+  display: inline-block;
+  padding: 14px 28px;
+  border-radius: 999px;
+  background: #ff8a00;
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+}
