@@ -7,12 +7,24 @@ import Footer from "../components/Footer";
 import "./Home.css";
 
 const partnerNames = [
-  "FOOD BANK NY",
-  "SHELTER HOUSE",
-  "WHOLE FOODS",
-  "MARRIOTT",
-  "FOOD BANK NY",
-  "SHELTER HOUSE",
+  "Food Bank NY",
+  "Shelter House",
+  "Whole Foods",
+  "Marriott",
+  "Red Cross",
+  "Rescue Mission",
+  "Food Bank NY",
+  "Shelter House",
+  "Whole Foods",
+  "Marriott",
+  "Red Cross",
+  "Rescue Mission",
+  "Food Bank NY",
+  "Shelter House",
+  "Whole Foods",
+  "Marriott",
+  "Red Cross",
+  "Rescue Mission"
 ];
 
 const features = [
@@ -20,37 +32,37 @@ const features = [
     title: "Live Delivery Tracking",
     description:
       "Track every donation in real time from pickup to successful delivery.",
-    accent: "#fff8ed",
+    icon: "📍"
   },
   {
     title: "Smart Logistics",
     description:
       "Assigns the fastest delivery partner for timely and efficient transportation.",
-    accent: "#f5fffd",
+    icon: "🚚"
   },
   {
     title: "Verified Network",
     description:
       "Only verified restaurants, NGOs, and partners ensure trusted food distribution.",
-    accent: "#fff6ec",
+    icon: "🛡️"
   },
   {
     title: "Instant Notifications",
     description:
       "Receive real-time updates for donations, pickups, and deliveries.",
-    accent: "#f2fcff",
+    icon: "🔔"
   },
   {
     title: "Role-Based Dashboards",
     description:
       "Personalized dashboards designed for donors, NGOs, drivers, and admins.",
-    accent: "#fff600",
+    icon: "📊"
   },
   {
     title: "QR & Photo Verification",
     description:
       "Confirm every pickup and delivery with secure QR codes and image proof.",
-    accent: "#f1fff8",
+    icon: "📸"
   },
 ];
 
@@ -156,14 +168,18 @@ export default function Home() {
     <>
       <Navbar />
       <main className="home-shell">
+        
+        {/* HERO SECTION */}
         <section className="hero" id="hero">
           <div className="hero-copy">
-            <span className="eyebrow-pill">FOOD RESCUE, REIMAGINED</span>
+            <div className="hero-live-badge">
+              <span className="live-dot"></span> Live Matching Active
+            </div>
             <motion.h1
               className="hero-title"
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
             >
               Every surplus meal can become someone’s next meal.
             </motion.h1>
@@ -171,7 +187,7 @@ export default function Home() {
               className="hero-description"
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.85, delay: 0.1 }}
+              transition={{ duration: 0.85, delay: 0.1, ease: "easeOut" }}
             >
               Our intelligent platform ensures that good food never goes to waste by connecting restaurants, hotels and event organizers with NGOs, orphanages, and shelters in real-time.
             </motion.p>
@@ -179,16 +195,16 @@ export default function Home() {
             <div className="hero-actions">
               <motion.button
                 className="hero-cta hero-cta-primary"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={handleShareMealClick}
               >
                 Share a Meal
               </motion.button>
               <motion.button
                 className="hero-cta hero-cta-secondary"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={handleReceiveSupportClick}
               >
                 Receive Support
@@ -202,34 +218,42 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Hero Visual Graphic (Right) */}
           <motion.div
             className="hero-visual"
+            style={{ 
+              padding: 0, 
+              overflow: "hidden", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center", 
+              minHeight: "auto", 
+              background: "none", 
+              border: "none", 
+              boxShadow: "none",
+              height: "auto"
+            }}
             initial={{ opacity: 0, y: 36 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.1 }}
+            transition={{ duration: 0.9, delay: 0.1, ease: "easeOut" }}
           >
-            <div className="visual-glow" />
-            <div className="visual-panel">
-              <div className="visual-header">
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className="visual-map" />
-              <div className="visual-info">
-                <div>
-                  <strong>Live delivery</strong>
-                  <small>Pickups updated in 24s</small>
-                </div>
-                <div>Driver ETA 12m</div>
-              </div>
-            </div>
-            <div className="visual-badge badge-top">Live Tracking</div>
-            <div className="visual-badge badge-left">Nearby NGO Found</div>
-            <div className="visual-badge badge-bottom">24/7 Support</div>
+            <img 
+              src="/images/delivery_illustration.png" 
+              alt="MealBridge Delivery Illustration" 
+              style={{ 
+                width: "100%", 
+                height: "auto", 
+                objectFit: "contain", 
+                display: "block", 
+                borderRadius: "24px",
+                boxShadow: "0 20px 40px -15px rgba(15, 23, 42, 0.08)",
+                filter: "saturate(0.80)" 
+              }} 
+            />
           </motion.div>
         </section>
 
+        {/* TRUSTED PARTNER LOGOS */}
         <section className="section center-section">
           <div className="section-header">
             <p className="eyebrow-pill">Empowering Global Partners</p>
@@ -246,20 +270,24 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="section crisis-section">
+        {/* GLOBAL CRISIS / PROBLEM CARDS */}
+        <section className="section">
           <div className="section-header center">
             <p className="eyebrow-pill">Global Crisis</p>
             <h2>MealBridge builds a sustainable food ecosystem by connecting food providers with verified organizations through technology.</h2>
           </div>
           <div className="crisis-grid">
-            {crisisCards.map((card) => (
+            {crisisCards.map((card, idx) => (
               <motion.a
                 key={card.title}
                 className="crisis-card"
                 href={card.url}
                 target="_blank"
                 rel="noreferrer"
-                whileHover={{ y: -6 }}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.6, delay: idx * 0.15 }}
               >
                 <div className="crisis-icon">{card.icon}</div>
                 <div>
@@ -272,6 +300,7 @@ export default function Home() {
           </div>
         </section>
 
+        {/* FEATURES GRID */}
         <section className="section" id="features">
           <div className="section-header center">
             <p className="eyebrow-pill">POWERFUL FEATURES</p>
@@ -282,13 +311,12 @@ export default function Home() {
               <motion.article
                 key={feature.title}
                 className="feature-card"
-                style={{ background: feature.accent }}
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.55, delay: index * 0.08 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <div className="feature-mark">✓</div>
+                <div className="feature-mark">{feature.icon}</div>
                 <h3>{feature.title}</h3>
                 <p>{feature.description}</p>
               </motion.article>
@@ -296,6 +324,7 @@ export default function Home() {
           </div>
         </section>
 
+        {/* FAQ ACCORDION */}
         <section className="section faq-section" id="faq">
           <div className="section-header center">
             <p className="eyebrow-pill">COMMON QUESTIONS</p>
@@ -314,16 +343,19 @@ export default function Home() {
               >
                 <div className="accordion-title">
                   <h3>{item.question}</h3>
-                  <span>{activeFaq === index ? "−" : "+"}</span>
+                  <span className="accordion-chevron">↓</span>
                 </div>
-                <div className="accordion-content">
-                  <p>{item.answer}</p>
+                <div className="accordion-content-wrapper">
+                  <div className="accordion-content">
+                    <p>{item.answer}</p>
+                  </div>
                 </div>
               </motion.div>
             ))}
           </div>
         </section>
 
+        {/* CTA BANNER */}
         <section className="section cta-section">
           <div className="cta-card">
             <div>

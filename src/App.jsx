@@ -32,6 +32,9 @@ function ProtectedRoute({ children, allowedRole }) {
   useEffect(() => {
     if (user) {
       const activeRole = user.unsafeMetadata?.role || sessionStorage.getItem("mealbridge-role");
+      if (activeRole) {
+        sessionStorage.setItem("mealbridge-role", activeRole);
+      }
       setRole(activeRole);
       setLoading(false);
     } else {
@@ -70,7 +73,13 @@ function ProtectedRouteRedirect({ role, allowedRole, showToast }) {
     }
   }, [role, allowedRole, showToast]);
 
-  const targetPath = role === "donor" ? "/donor-dashboard" : role === "receiver" ? "/receiver-dashboard" : "/delivery-dashboard";
+  const targetPath = role === "donor" 
+    ? "/donor-dashboard" 
+    : role === "receiver" 
+      ? "/receiver-dashboard" 
+      : role === "delivery" 
+        ? "/delivery-dashboard" 
+        : "/select-role";
   return <Navigate to={targetPath} replace />;
 }
 

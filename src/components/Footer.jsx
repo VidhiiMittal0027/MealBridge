@@ -3,7 +3,7 @@ export default function Footer() {
     <footer className="footer-shell">
       <div className="footer-grid">
         <div className="footer-brand">
-          <div className="brand-mark-footer">MB</div>
+          <img src="/images/logo.png" alt="MealBridge Logo" className="brand-mark-footer" style={{ objectFit: "contain", background: "none" }} />
           <div>
             <h3>MealBridge</h3>
             <p>

@@ -1123,6 +1123,24 @@ img {
   color: var(--primary);
 }
 
+.delete-btn-custom {
+  padding: 10px;
+  border-radius: 999px;
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-btn-custom:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
 /* Incoming Orders Styles */
 .order-grid {
   display: grid;

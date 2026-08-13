@@ -10,11 +10,15 @@ export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [role, setRole] = useState("donor");
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const storedRole = sessionStorage.getItem("mealbridge-role");
-      if (storedRole) setRole(storedRole);
+      const activeRole = sessionStorage.getItem("mealbridge-role") || user?.unsafeMetadata?.role;
+      if (activeRole) {
+        setRole(activeRole);
+        sessionStorage.setItem("mealbridge-role", activeRole);
+      }
     }
   }, [user]);
 
@@ -30,7 +34,6 @@ export default function DashboardLayout({ children }) {
     if (role === "donor") {
       return [
         { label: "Overview", href: "/donor-dashboard", icon: "📊" },
-        { label: "List Surplus", href: "/donate-food", icon: "🍱" },
         { label: "Impact Tracker", href: "/impact-dashboard", icon: "🌱" },
       ];
     }
@@ -86,7 +89,7 @@ export default function DashboardLayout({ children }) {
           </nav>
 
           <div className="sidebar-footer">
-            <button onClick={handleLogout} className="logout-btn">
+            <button onClick={() => setIsLogoutConfirmOpen(true)} className="logout-btn">
               <span className="link-icon">🚪</span>
               <span className="link-label">Log Out</span>
             </button>
@@ -103,6 +106,27 @@ export default function DashboardLayout({ children }) {
 
       {/* Floating Chat System */}
       <FloatingChat />
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {isLogoutConfirmOpen && (
+        <div className="modal-backdrop-custom" style={{ zIndex: 3000 }} onClick={() => setIsLogoutConfirmOpen(false)}>
+          <div className="modal-card-custom small-modal" style={{ padding: "28px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <span style={{ fontSize: "3rem", display: "block", marginBottom: "16px" }}>🚪</span>
+            <h3 style={{ margin: "0 0 8px", fontSize: "1.3rem", fontWeight: "800", color: "var(--text-primary)" }}>Confirm Log Out</h3>
+            <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", margin: "0 0 24px", lineHeight: "1.5" }}>
+              Are you sure you want to log out of your MealBridge account?
+            </p>
+            <div className="modal-actions-custom" style={{ justifyContent: "center", gap: "16px" }}>
+              <button className="btn-cancel" style={{ flex: 1, padding: "12px 0" }} onClick={() => setIsLogoutConfirmOpen(false)}>
+                Cancel
+              </button>
+              <button className="btn-confirm-action" style={{ flex: 1, padding: "12px 0", background: "linear-gradient(135deg, #ef4444, #b91c1c)" }} onClick={handleLogout}>
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

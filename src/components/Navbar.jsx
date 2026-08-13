@@ -61,7 +61,9 @@ export default function Navbar() {
   };
 
   const getDashboardLink = () => {
-    const storedRole = typeof window !== "undefined" ? sessionStorage.getItem("mealbridge-role") : null;
+    const storedRole = typeof window !== "undefined" 
+      ? (sessionStorage.getItem("mealbridge-role") || user?.unsafeMetadata?.role) 
+      : user?.unsafeMetadata?.role;
     if (storedRole === "donor") return "/donor-dashboard";
     if (storedRole === "receiver") return "/receiver-dashboard";
     if (storedRole === "delivery") return "/delivery-dashboard";
@@ -112,10 +114,41 @@ export default function Navbar() {
     <>
       <nav className={`navbar ${scrolled ? "navbar-scrolled" : ""} ${!isVisible ? "navbar-hidden" : ""}`}>
         <div className="navbar-inner">
-          <Link className="brand" to="/">
-            <span className="brand-mark">MB</span>
+          {/* <Link className="brand" to="/">
+            <img src="/images/logo.png" alt="MealBridge Logo" className="brand-mark" style={{ width: "auto", height: "56px", objectFit: "contain", background: "none", border: "none", boxShadow: "none" }} />
             <span className="brand-text">MealBridge</span>
-          </Link>
+          </Link> */}
+          <Link className="brand" to="/" style={{ display: "inline-flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
+  <img 
+    src="/images/logo.png" 
+    alt="MealBridge Logo" 
+    className="brand-mark" 
+    style={{ 
+      width: "auto", 
+      height: "56px", 
+      objectFit: "contain", 
+      background: "transparent", 
+      border: "none", 
+      boxShadow: "none",
+      mixBlendMode: "multiply" // Blends the white background box into the navbar
+    }} 
+  />
+  <span 
+    className="brand-text"
+    style={{
+      fontFamily: "'Poppins', 'Segoe UI', sans-serif",
+      fontSize: "28px",
+      fontWeight: "700",
+      letterSpacing: "0.5px",
+      background: "linear-gradient(135deg, #e65100 0%, #1565c0 100%)", // Ombre gradient matching logo colors
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      display: "inline-block"
+    }}
+  >
+    MealBridge
+  </span>
+</Link>
 
           <div className="nav-links">
             {navItems.map((item) => (

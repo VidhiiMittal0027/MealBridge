@@ -496,9 +496,14 @@ export default function DonorDashboard() {
                   <span className={`status-badge-custom ${item.status.replace(/\s+/g, '-').toLowerCase()}`}>
                     {item.status}
                   </span>
-                  <div className="card-btn-actions">
+                  <div className="card-btn-actions" style={{ gridTemplateColumns: "1.2fr 1fr 1fr" }}>
                     <button className="view-btn" onClick={() => openDetailsModal(item)}>View Details</button>
                     <button className="edit-btn" onClick={() => openEditModal(item)}>Edit</button>
+                    <button className="delete-btn-custom" onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete '${item.name}'?`)) {
+                        deleteFood(item.id);
+                      }
+                    }}>Delete</button>
                   </div>
                 </div>
               </article>

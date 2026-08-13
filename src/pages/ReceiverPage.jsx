@@ -23,6 +23,8 @@ export default function ReceiverPage() {
     sendChatMessage
   } = useContext(MealBridgeContext);
 
+  const currentItem = donations.find((d) => d.id === selectedItem?.id) || selectedItem;
+
   // States
   const [selectedItem, setSelectedItem] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -261,48 +263,48 @@ export default function ReceiverPage() {
       )}
 
       {/* VIEW DETAILS & CHAT SLIDE OVER / MODAL */}
-      {isDetailsOpen && selectedItem && (
+      {isDetailsOpen && currentItem && (
         <div className="modal-backdrop-custom animate-fade-in" onClick={() => setIsDetailsOpen(false)}>
           <div className="modal-card-custom wide-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-custom">
-              <h2>Available Rescued Meals: {selectedItem.name}</h2>
+              <h2>Available Rescued Meals: {currentItem.name}</h2>
               <button className="close-btn" onClick={() => setIsDetailsOpen(false)}>×</button>
             </div>
             
             <div className="wide-modal-content-split">
               {/* Left Column: Details */}
               <div className="split-column-left">
-                <img src={selectedItem.imageUrl} alt={selectedItem.name} className="details-img-split" />
+                <img src={currentItem.imageUrl} alt={currentItem.name} className="details-img-split" />
                 
                 <div className="details-section-custom">
                   <h3>🍲 Recipe & Portion Info</h3>
                   <div className="details-grid-specs">
-                    <p><strong>Name:</strong> {selectedItem.name}</p>
-                    <p><strong>Category:</strong> {selectedItem.category}</p>
-                    <p><strong>Veg / Non-Veg:</strong> {selectedItem.vegNonVeg}</p>
-                    <p><strong>Quantity:</strong> {selectedItem.quantity} servings</p>
-                    <p><strong>Transportation Available:</strong> {selectedItem.needTransportation === "Yes" ? "No (Donor Requesting Volunteer Help)" : "Yes (Self-arranged/Pickup)"}</p>
+                    <p><strong>Name:</strong> {currentItem.name}</p>
+                    <p><strong>Category:</strong> {currentItem.category}</p>
+                    <p><strong>Veg / Non-Veg:</strong> {currentItem.vegNonVeg}</p>
+                    <p><strong>Quantity:</strong> {currentItem.quantity} servings</p>
+                    <p><strong>Transportation Available:</strong> {currentItem.needTransportation === "Yes" ? "No (Donor Requesting Volunteer Help)" : "Yes (Self-arranged/Pickup)"}</p>
                   </div>
                 </div>
 
                 <div className="details-section-custom">
                   <h3>🕒 Timings</h3>
                   <div className="details-grid-specs">
-                    <p><strong>Cooking Time:</strong> {new Date(selectedItem.cookingTime).toLocaleString()}</p>
-                    <p><strong>Expiry Time:</strong> {new Date(selectedItem.expiryTime).toLocaleString()}</p>
+                    <p><strong>Cooking Time:</strong> {new Date(currentItem.cookingTime).toLocaleString()}</p>
+                    <p><strong>Expiry Time:</strong> {new Date(currentItem.expiryTime).toLocaleString()}</p>
                   </div>
                 </div>
 
                 <div className="details-section-custom">
                   <h3>📍 Address details</h3>
-                  <p>{selectedItem.pickupAddress}</p>
-                  <p className="gps-coordinate">Coordinates: {selectedItem.gpsLocation}</p>
+                  <p>{currentItem.pickupAddress}</p>
+                  <p className="gps-coordinate">Coordinates: {currentItem.gpsLocation}</p>
                 </div>
 
                 <div className="details-section-custom">
                   <h3>📝 Description</h3>
-                  <p>{selectedItem.description || "No description provided."}</p>
-                  <p><strong>Special Instructions:</strong> {selectedItem.specialInstructions || "None."}</p>
+                  <p>{currentItem.description || "No description provided."}</p>
+                  <p><strong>Special Instructions:</strong> {currentItem.specialInstructions || "None."}</p>
                 </div>
               </div>
 
@@ -344,7 +346,7 @@ export default function ReceiverPage() {
 
                     {/* Confirm Action Box */}
                     <div className="confirm-action-box" style={{ position: "relative" }}>
-                      {selectedItem.status === "Matching Pending" ? (
+                      {currentItem.status === "Matching Pending" ? (
                         <div className="alert-box-info">
                           <p>⏳ Request Pending Donor Approval.</p>
                         </div>
@@ -354,7 +356,7 @@ export default function ReceiverPage() {
                           
                           {/* Tooltip trigger for disabled buttons */}
                           <div 
-                            onMouseEnter={() => { if (!isOrgRegistered) setShowTooltipForId(selectedItem.id); }}
+                            onMouseEnter={() => { if (!isOrgRegistered) setShowTooltipForId(currentItem.id); }}
                             onMouseLeave={() => setShowTooltipForId(null)}
                             style={{ display: "inline-block", width: "100%" }}
                           >
@@ -370,7 +372,7 @@ export default function ReceiverPage() {
                               Confirm Request
                             </button>
                             
-                            {!isOrgRegistered && showTooltipForId === selectedItem.id && (
+                            {!isOrgRegistered && showTooltipForId === currentItem.id && (
                               <div style={{
                                 position: "absolute",
                                 bottom: "100%",
@@ -508,7 +510,7 @@ export default function ReceiverPage() {
       )}
 
       {/* CONFIRM REQUEST POPUP */}
-      {isRequestOpen && selectedItem && (
+      {isRequestOpen && currentItem && (
         <div className="modal-backdrop-custom" style={{ zIndex: 1500 }}>
           <div className="modal-card-custom small-modal">
             <div className="modal-header-custom">
@@ -523,7 +525,7 @@ export default function ReceiverPage() {
                 <input 
                   type="number" 
                   min="1" 
-                  max={selectedItem.quantity}
+                  max={currentItem.quantity}
                   value={expectedPeople} 
                   onChange={(e) => setExpectedPeople(e.target.value)} 
                   required 
