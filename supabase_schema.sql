@@ -84,6 +84,9 @@ create table if not exists public.food_donations (
   need_transportation text check (need_transportation in ('Yes', 'No')) default 'No',
   special_instructions text,
   status text check (status in ('available', 'requested', 'accepted', 'picked_up', 'delivered', 'expired', 'cancelled')) default 'available' not null,
+  freshness_label text check (freshness_label in ('fresh', 'moderate', 'spoiled', 'uncertain')),
+  freshness_score numeric,
+  ai_model_version text,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );

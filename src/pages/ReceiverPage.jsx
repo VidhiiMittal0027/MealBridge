@@ -23,10 +23,9 @@ export default function ReceiverPage() {
     sendChatMessage
   } = useContext(MealBridgeContext);
 
-  const currentItem = donations.find((d) => d.id === selectedItem?.id) || selectedItem;
-
   // States
   const [selectedItem, setSelectedItem] = useState(null);
+  const currentItem = donations.find((d) => d.id === selectedItem?.id) || selectedItem;
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -215,6 +214,11 @@ export default function ReceiverPage() {
                       {item.vegNonVeg === "Veg" ? "🟢 Veg" : "🔴 Non-Veg"}
                     </span>
                   </div>
+                  {item.freshnessLabel && (
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: item.freshnessLabel === 'fresh' ? "rgba(5, 150, 105, 0.1)" : item.freshnessLabel === 'spoiled' ? "rgba(239, 68, 68, 0.1)" : "rgba(245, 158, 11, 0.1)", color: item.freshnessLabel === 'fresh' ? "var(--primary-color)" : item.freshnessLabel === 'spoiled' ? "#ef4444" : "#d97706", padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: "700", marginBottom: "8px" }}>
+                      <span>🤖 AI: {item.freshnessLabel.toUpperCase()} ({item.freshnessScore}%)</span>
+                    </div>
+                  )}
                   <p className="cooking-time">🕒 Cooking: {new Date(item.cookingTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                   <div className="card-spec-row">
                     <span className="spec-pill">{item.quantity} Servings</span>

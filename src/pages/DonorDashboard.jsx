@@ -73,17 +73,36 @@ export default function DonorDashboard() {
   const [category, setCategory] = useState("Cooked Meals");
   const [vegNonVeg, setVegNonVeg] = useState("Veg");
   const [quantity, setQuantity] = useState(10);
+  const [servings, setServings] = useState(10);
+  const [imageUrl, setImageUrl] = useState("");
   const [cookingTime, setCookingTime] = useState("");
   const [expiryTime, setExpiryTime] = useState("");
   const [pickupAddress, setPickupAddress] = useState("");
-  const [gpsLocation, setGpsLocation] = useState("40.7128° N, 74.0060° W");
   const [needTransportation, setNeedTransportation] = useState("No");
   const [description, setDescription] = useState("");
   const [specialInstructions, setSpecialInstructions] = useState("");
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   
   // Accept Prep Time State
   const [prepTime, setPrepTime] = useState("30 Minutes");
   const [customPrepTime, setCustomPrepTime] = useState("");
+  
+  // AI Freshness States
+  const [imageFile, setImageFile] = useState(null);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Check for session storage command to open a specific request (from notification click)
   useEffect(() => {
@@ -110,25 +129,59 @@ export default function DonorDashboard() {
     }
   }, [navigate, showToast]);
 
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
+    if (imageFile) {
+      setIsRegisterOpen(false);
+      setIsAiModalOpen(true);
+      setIsAnalyzing(true);
+      
+      const formData = new FormData();
+      formData.append("file", imageFile);
+      
+      try {
+        const response = await fetch("http://127.0.0.1:8000/predict-freshness", {
+          method: "POST",
+          body: formData
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setAiAnalysis(data);
+        } else {
+          setAiAnalysis({ error: "Failed to connect to AI service." });
+        }
+      } catch (err) {
+        setAiAnalysis({ error: "AI service is offline." });
+      }
+      setIsAnalyzing(false);
+    } else {
+      publishDonation(null);
+    }
+  };
+
+  const publishDonation = (aiData = null) => {
     const foodData = {
       name: foodName,
       category,
       vegNonVeg,
       quantity: Number(quantity),
+      servings: Number(servings),
       cookingTime,
       expiryTime,
-      imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=60", // default food mock image
+      imageUrl: imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=60",
       pickupAddress,
-      gpsLocation,
       needTransportation,
       description,
       specialInstructions,
       donorName: user?.fullName || "Fresh Bites Catering",
+      freshnessLabel: aiData?.freshness_label || null,
+      freshnessScore: aiData?.freshness_score || null,
+      aiModelVersion: aiData?.model_version || null
     };
     registerFood(foodData);
     resetForm();
+    setIsAiModalOpen(false);
     setIsRegisterOpen(false);
   };
 
@@ -140,13 +193,14 @@ export default function DonorDashboard() {
       category,
       vegNonVeg,
       quantity: Number(quantity),
+      servings: Number(servings),
       cookingTime,
       expiryTime,
       pickupAddress,
-      gpsLocation,
       needTransportation,
       description,
       specialInstructions,
+      imageUrl,
     };
     updateFood(selectedItem.id, updatedData);
     setIsEditOpen(false);
@@ -159,10 +213,10 @@ export default function DonorDashboard() {
     setCategory(item.category);
     setVegNonVeg(item.vegNonVeg);
     setQuantity(item.quantity);
+    setServings(item.servings || item.quantity);
     setCookingTime(item.cookingTime);
     setExpiryTime(item.expiryTime);
     setPickupAddress(item.pickupAddress);
-    setGpsLocation(item.gpsLocation);
     setNeedTransportation(item.needTransportation);
     setDescription(item.description);
     setSpecialInstructions(item.specialInstructions);
@@ -204,19 +258,22 @@ export default function DonorDashboard() {
     setCategory("Cooked Meals");
     setVegNonVeg("Veg");
     setQuantity(10);
+    setServings(10);
+    setImageUrl("");
+    setImageFile(null);
+    setAiAnalysis(null);
     setCookingTime("");
     setExpiryTime("");
     setPickupAddress("");
-    setGpsLocation("40.7128° N, 74.0060° W");
     setNeedTransportation("No");
     setDescription("");
     setSpecialInstructions("");
   };
 
   // Filter donations and orders
-  const myDonations = donations; 
-  const incomingRequests = orders.filter((o) => o.status === "Pending");
-  const activeOrders = orders.filter((o) => o.status !== "Pending" && o.status !== "Declined");
+  const myDonations = donations.filter((d) => d.donorId === user?.id); 
+  const incomingRequests = orders.filter((o) => o.status === "Pending" && o.donorId === user?.id);
+  const activeOrders = orders.filter((o) => o.status !== "Pending" && o.status !== "Declined" && o.donorId === user?.id);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -564,6 +621,71 @@ export default function DonorDashboard() {
         </div>
       )}
 
+      {/* AI FRESHNESS MODAL */}
+      {isAiModalOpen && (
+        <div className="modal-backdrop-custom" style={{ zIndex: 3000 }}>
+          <div className="modal-card-custom">
+            <div className="modal-header-custom">
+              <h2>AI Freshness Check</h2>
+              <button className="close-btn" onClick={() => { setIsAiModalOpen(false); setIsRegisterOpen(true); }}>×</button>
+            </div>
+            <div className="modal-form-scrollable" style={{ padding: "24px", textAlign: "center" }}>
+              {isAnalyzing ? (
+                <div style={{ padding: "40px 0" }}>
+                  <div style={{ margin: "0 auto 20px", width: "40px", height: "40px", border: "4px solid rgba(5, 150, 105, 0.2)", borderTopColor: "var(--primary-color)", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+                  <p style={{ fontWeight: "600", color: "var(--text-primary)" }}>Analyzing visual freshness...</p>
+                </div>
+              ) : aiAnalysis?.error ? (
+                <div style={{ padding: "20px 0" }}>
+                  <span style={{ fontSize: "2rem" }}>❌</span>
+                  <p style={{ color: "#ef4444", fontWeight: "600", margin: "16px 0" }}>{aiAnalysis.error}</p>
+                  <p style={{ color: "var(--text-secondary)" }}>Would you like to publish without AI analysis?</p>
+                </div>
+              ) : (
+                <div style={{ textAlign: "left" }}>
+                  {imageUrl && <img src={imageUrl} alt="Food" style={{ width: "100%", maxHeight: "200px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px", border: "1px solid var(--border-color)" }} />}
+                  
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+                    <div style={{ background: "var(--surface)", padding: "12px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                      <p style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px", color: "var(--text-secondary)", margin: "0 0 4px" }}>Detected Food</p>
+                      <p style={{ fontWeight: "700", fontSize: "1.1rem", margin: 0, textTransform: "capitalize" }}>{aiAnalysis?.food_type || "Unknown"}</p>
+                    </div>
+                    
+                    <div style={{ background: "var(--surface)", padding: "12px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                      <p style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px", color: "var(--text-secondary)", margin: "0 0 4px" }}>Visual Freshness</p>
+                      <p style={{ 
+                        fontWeight: "800", fontSize: "1.1rem", margin: 0, textTransform: "uppercase",
+                        color: aiAnalysis?.freshness_label === 'fresh' ? 'var(--primary-color)' : 
+                               aiAnalysis?.freshness_label === 'spoiled' ? '#ef4444' : '#f59e0b'
+                      }}>
+                        {aiAnalysis?.freshness_label} ({aiAnalysis?.freshness_score}%)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ background: "rgba(5, 150, 105, 0.05)", padding: "16px", borderRadius: "8px", marginTop: "12px", borderLeft: "4px solid var(--primary-color)" }}>
+                    <p style={{ fontSize: "0.95rem", margin: 0, fontWeight: "500" }}><strong>AI Assessment:</strong> {aiAnalysis?.recommendation}</p>
+                  </div>
+                  
+                  <div style={{ background: "#fffbeb", padding: "16px", borderRadius: "8px", marginTop: "12px", borderLeft: "4px solid #f59e0b" }}>
+                    <p style={{ fontSize: "0.85rem", margin: 0, color: "#92400e", lineHeight: "1.5" }}>
+                      <strong>⚠ IMPORTANT:</strong> AI assessment is based purely on visual analysis and <strong>does not certify food safety</strong>. Actual safety depends on proper handling, preparation time, temperature, and storage conditions.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="modal-actions-custom" style={{ marginTop: "32px", display: "flex", gap: "16px" }}>
+                <button type="button" className="btn-cancel" style={{ flex: 1 }} onClick={() => { setIsAiModalOpen(false); setIsRegisterOpen(true); }}>Back to Edit</button>
+                <button type="button" className="btn-confirm-action" style={{ flex: 2 }} onClick={() => publishDonation(aiAnalysis)}>
+                  {aiAnalysis?.error ? "Publish Anyway" : "Confirm & Publish"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* REGISTER FOOD MODAL */}
       {isRegisterOpen && (
         <div className="modal-backdrop-custom">
@@ -600,15 +722,25 @@ export default function DonorDashboard() {
 
               <div className="form-row-custom">
                 <label className="field-label half">
-                  Quantity (servings/meals)
+                  Quantity (e.g. kg, boxes)
                   <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
                 </label>
+                <label className="field-label half">
+                  Number of Servings
+                  <input type="number" min="1" value={servings} onChange={(e) => setServings(e.target.value)} required />
+                </label>
+              </div>
+              <div className="form-row-custom">
                 <label className="field-label half">
                   Need Transportation?
                   <select value={needTransportation} onChange={(e) => setNeedTransportation(e.target.value)}>
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
                   </select>
+                </label>
+                <label className="field-label half">
+                  Upload Image
+                  <input type="file" accept="image/*" onChange={handleImageChange} style={{ border: "none", padding: "8px 0" }} />
                 </label>
               </div>
 
@@ -628,10 +760,7 @@ export default function DonorDashboard() {
                 <textarea rows="2" value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)} required />
               </label>
 
-              <label className="field-label">
-                GPS Location coordinates
-                <input type="text" value={gpsLocation} onChange={(e) => setGpsLocation(e.target.value)} required />
-              </label>
+
 
               <label className="field-label">
                 Description
@@ -688,15 +817,25 @@ export default function DonorDashboard() {
 
               <div className="form-row-custom">
                 <label className="field-label half">
-                  Quantity (servings/meals)
+                  Quantity (e.g. kg, boxes)
                   <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
                 </label>
+                <label className="field-label half">
+                  Number of Servings
+                  <input type="number" min="1" value={servings} onChange={(e) => setServings(e.target.value)} required />
+                </label>
+              </div>
+              <div className="form-row-custom">
                 <label className="field-label half">
                   Need Transportation?
                   <select value={needTransportation} onChange={(e) => setNeedTransportation(e.target.value)}>
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
                   </select>
+                </label>
+                <label className="field-label half">
+                  Upload Image (Optional)
+                  <input type="file" accept="image/*" onChange={handleImageChange} style={{ border: "none", padding: "8px 0" }} />
                 </label>
               </div>
 
@@ -716,10 +855,7 @@ export default function DonorDashboard() {
                 <textarea rows="2" value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)} required />
               </label>
 
-              <label className="field-label">
-                GPS Location coordinates
-                <input type="text" value={gpsLocation} onChange={(e) => setGpsLocation(e.target.value)} required />
-              </label>
+
 
               <label className="field-label">
                 Description

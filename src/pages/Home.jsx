@@ -147,13 +147,12 @@ export default function Home() {
     }
   };
 
-  const handleContinueSwitch = async () => {
+  const handleContinueSwitch = () => {
     setShowSwitchModal(false);
-    await signOut();
     if (typeof window !== "undefined") {
       sessionStorage.setItem("mealbridge-role", targetRole);
     }
-    navigate("/login");
+    signOut({ redirectUrl: "/login" });
   };
 
   const handleRoleAction = (role) => {

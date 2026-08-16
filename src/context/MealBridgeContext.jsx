@@ -69,7 +69,11 @@ export function MealBridgeProvider({ children }) {
           needTransportation: d.need_transportation,
           specialInstructions: d.special_instructions,
           status: dbToMockStatus(d.status),
-          donorName: d.donor?.full_name || "Food Donor"
+          donorId: d.donor_id,
+          donorName: d.donor?.full_name || "Food Donor",
+          freshnessLabel: d.freshness_label,
+          freshnessScore: d.freshness_score,
+          aiModelVersion: d.ai_model_version
         }));
         setDonations(mapped);
       }
@@ -99,6 +103,7 @@ export function MealBridgeProvider({ children }) {
           orderTime: o.requested_at,
           status: orderDbToMockStatus(o.status),
           prepTime: o.prep_time,
+          donorId: o.donation?.donor_id,
           donorName: o.donation ? "Fresh Bites Catering" : "Donor"
         }));
         setOrders(mapped);
@@ -326,15 +331,17 @@ export function MealBridgeProvider({ children }) {
           category: foodData.category,
           veg_non_veg: foodData.vegNonVeg,
           quantity: foodData.quantity,
-          servings: foodData.quantity,
+          servings: foodData.servings,
           prepared_at: foodData.cookingTime || new Date().toISOString(),
           expiry_time: foodData.expiryTime || new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
           pickup_address: foodData.pickupAddress,
-          gps_location: foodData.gpsLocation,
           need_transportation: foodData.needTransportation,
           special_instructions: foodData.specialInstructions,
           image_url: foodData.imageUrl,
-          status: 'available'
+          status: 'available',
+          freshness_label: foodData.freshnessLabel,
+          freshness_score: foodData.freshnessScore,
+          ai_model_version: foodData.aiModelVersion
         });
       
       if (error) {
@@ -358,12 +365,13 @@ export function MealBridgeProvider({ children }) {
           category: updatedData.category,
           veg_non_veg: updatedData.vegNonVeg,
           quantity: updatedData.quantity,
+          servings: updatedData.servings,
           prepared_at: updatedData.cookingTime,
           expiry_time: updatedData.expiryTime,
           pickup_address: updatedData.pickupAddress,
-          gps_location: updatedData.gpsLocation,
           need_transportation: updatedData.needTransportation,
-          special_instructions: updatedData.specialInstructions
+          special_instructions: updatedData.specialInstructions,
+          ...(updatedData.imageUrl && { image_url: updatedData.imageUrl })
         })
         .eq("id", id);
 
