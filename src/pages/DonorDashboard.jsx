@@ -639,18 +639,17 @@ export default function DonorDashboard() {
                 <div style={{ padding: "20px 0" }}>
                   <span style={{ fontSize: "2rem" }}>❌</span>
                   <p style={{ color: "#ef4444", fontWeight: "600", margin: "16px 0" }}>{aiAnalysis.error}</p>
-                  <p style={{ color: "var(--text-secondary)" }}>Would you like to publish without AI analysis?</p>
+                  {aiAnalysis?.is_food === false ? (
+                    <p style={{ color: "var(--text-secondary)" }}>Please upload a valid image of the surplus food to proceed.</p>
+                  ) : (
+                    <p style={{ color: "var(--text-secondary)" }}>Would you like to publish without AI analysis?</p>
+                  )}
                 </div>
               ) : (
                 <div style={{ textAlign: "left" }}>
                   {imageUrl && <img src={imageUrl} alt="Food" style={{ width: "100%", maxHeight: "200px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px", border: "1px solid var(--border-color)" }} />}
                   
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-                    <div style={{ background: "var(--surface)", padding: "12px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
-                      <p style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px", color: "var(--text-secondary)", margin: "0 0 4px" }}>Detected Food</p>
-                      <p style={{ fontWeight: "700", fontSize: "1.1rem", margin: 0, textTransform: "capitalize" }}>{aiAnalysis?.food_type || "Unknown"}</p>
-                    </div>
-                    
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px", marginBottom: "16px" }}>
                     <div style={{ background: "var(--surface)", padding: "12px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
                       <p style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px", color: "var(--text-secondary)", margin: "0 0 4px" }}>Visual Freshness</p>
                       <p style={{ 
@@ -658,7 +657,7 @@ export default function DonorDashboard() {
                         color: aiAnalysis?.freshness_label === 'fresh' ? 'var(--primary-color)' : 
                                aiAnalysis?.freshness_label === 'spoiled' ? '#ef4444' : '#f59e0b'
                       }}>
-                        {aiAnalysis?.freshness_label} ({aiAnalysis?.freshness_score}%)
+                        {aiAnalysis?.freshness_label === 'fresh' ? 'Fresh-looking' : aiAnalysis?.freshness_label === 'moderate' ? 'Questionable' : aiAnalysis?.freshness_label === 'spoiled' ? 'Visible spoilage' : aiAnalysis?.freshness_label} ({aiAnalysis?.freshness_score}%)
                       </p>
                     </div>
                   </div>
@@ -677,8 +676,8 @@ export default function DonorDashboard() {
               
               <div className="modal-actions-custom" style={{ marginTop: "32px", display: "flex", gap: "16px" }}>
                 <button type="button" className="btn-cancel" style={{ flex: 1 }} onClick={() => { setIsAiModalOpen(false); setIsRegisterOpen(true); }}>Back to Edit</button>
-                <button type="button" className="btn-confirm-action" style={{ flex: 2 }} onClick={() => publishDonation(aiAnalysis)}>
-                  {aiAnalysis?.error ? "Publish Anyway" : "Confirm & Publish"}
+                <button type="button" className="btn-confirm-action" style={{ flex: 2, opacity: aiAnalysis?.is_food === false ? 0.5 : 1, cursor: aiAnalysis?.is_food === false ? 'not-allowed' : 'pointer' }} onClick={() => publishDonation(aiAnalysis)} disabled={aiAnalysis?.is_food === false}>
+                  {aiAnalysis?.error ? (aiAnalysis?.is_food === false ? "Invalid Upload" : "Publish Anyway") : "Confirm & Publish"}
                 </button>
               </div>
             </div>
