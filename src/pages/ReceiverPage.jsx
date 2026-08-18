@@ -1,41 +1,1495 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext } from "react";
 import { useUser, useAuth } from "@clerk/react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { MealBridgeContext } from "../context/MealBridgeContext";
 import DashboardLayout from "../components/DashboardLayout";
 import Navbar from "../components/Navbar";
+
+/*
+  ============================================================
+  MEALBRIDGE — PREMIUM RECEIVER COMMAND CENTER
+  ============================================================
+  Existing functionality preserved:
+  - Clerk authentication
+  - MealBridgeContext
+  - Donation matching
+  - Food requests
+  - Orders
+  - Donor chat
+  - Organization registration
+  - Request confirmation
+*/
+
+const COLORS = {
+  navy: "#071A2F",
+  navy2: "#0B2742",
+  navy3: "#123653",
+  emerald: "#16A085",
+  mint: "#52D6B8",
+  green: "#16A085",
+  bg: "#F4F7F9",
+  white: "#FFFFFF",
+  text: "#10263D",
+  muted: "#718096",
+  border: "#E3EAF0",
+  softGreen: "#E8F8F4",
+  orange: "#F59E0B",
+  red: "#E85D5D",
+};
+
+const styles = `
+  * {
+    box-sizing: border-box;
+  }
+
+  .receiver-page {
+    min-height: 100%;
+    background:
+      radial-gradient(circle at 90% 0%, rgba(22,160,133,.08), transparent 30%),
+      radial-gradient(circle at 0% 20%, rgba(7,26,47,.045), transparent 28%),
+      ${COLORS.bg};
+    color: ${COLORS.text};
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  .receiver-shell {
+    width: min(1450px, 100%);
+    margin: 0 auto;
+    padding: 28px 30px 60px;
+  }
+
+  .receiver-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(22,160,133,.09);
+    color: ${COLORS.emerald};
+    border: 1px solid rgba(22,160,133,.16);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: ${COLORS.emerald};
+    box-shadow: 0 0 0 5px rgba(22,160,133,.10);
+    animation: pulseLive 1.8s infinite;
+  }
+
+  @keyframes pulseLive {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(.7); opacity: .65; }
+  }
+
+  .topbar-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: ${COLORS.muted};
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .verified-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 13px;
+    background: white;
+    border: 1px solid ${COLORS.border};
+    border-radius: 999px;
+    box-shadow: 0 5px 20px rgba(7,26,47,.04);
+  }
+
+  .verified-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: ${COLORS.emerald};
+    color: white;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  /* HERO */
+
+  .premium-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 30px;
+    padding: 42px;
+    min-height: 280px;
+    color: white;
+    background:
+      radial-gradient(circle at 82% 18%, rgba(82,214,184,.25), transparent 24%),
+      radial-gradient(circle at 100% 100%, rgba(22,160,133,.35), transparent 32%),
+      linear-gradient(135deg, ${COLORS.navy} 0%, ${COLORS.navy2} 55%, #0C3A50 100%);
+    box-shadow:
+      0 28px 70px rgba(7,26,47,.18),
+      inset 0 1px 0 rgba(255,255,255,.08);
+  }
+
+  .premium-hero::before {
+    content: "";
+    position: absolute;
+    width: 330px;
+    height: 330px;
+    border-radius: 50%;
+    right: -100px;
+    top: -140px;
+    border: 1px solid rgba(255,255,255,.10);
+  }
+
+  .premium-hero::after {
+    content: "";
+    position: absolute;
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    right: 30px;
+    bottom: -160px;
+    background: rgba(82,214,184,.08);
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 760px;
+  }
+
+  .hero-kicker {
+    color: ${COLORS.mint};
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    font-size: 11px;
+    font-weight: 900;
+    margin-bottom: 15px;
+  }
+
+  .hero-title {
+    margin: 0;
+    font-size: clamp(2.1rem, 4vw, 3.7rem);
+    line-height: 1.02;
+    letter-spacing: -.055em;
+    font-weight: 950;
+  }
+
+  .hero-title span {
+    color: ${COLORS.mint};
+  }
+
+  .hero-description {
+    max-width: 650px;
+    margin: 18px 0 25px;
+    color: rgba(255,255,255,.72);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 11px;
+  }
+
+  .hero-primary {
+    border: 0;
+    border-radius: 13px;
+    padding: 13px 19px;
+    background: ${COLORS.mint};
+    color: ${COLORS.navy};
+    font-weight: 950;
+    cursor: pointer;
+    box-shadow: 0 12px 30px rgba(82,214,184,.18);
+    transition: .2s ease;
+  }
+
+  .hero-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 17px 35px rgba(82,214,184,.28);
+  }
+
+  .hero-secondary {
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 13px;
+    padding: 13px 18px;
+    background: rgba(255,255,255,.07);
+    color: white;
+    font-weight: 850;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+  }
+
+  .hero-secondary:hover {
+    background: rgba(255,255,255,.11);
+  }
+
+  .hero-network {
+    position: absolute;
+    right: 38px;
+    top: 42px;
+    width: 260px;
+    height: 190px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .network-ring {
+    position: absolute;
+    border: 1px solid rgba(82,214,184,.17);
+    border-radius: 50%;
+  }
+
+  .ring-one {
+    width: 170px;
+    height: 170px;
+  }
+
+  .ring-two {
+    width: 125px;
+    height: 125px;
+  }
+
+  .ring-three {
+    width: 78px;
+    height: 78px;
+    background: rgba(82,214,184,.08);
+  }
+
+  .network-center {
+    width: 58px;
+    height: 58px;
+    border-radius: 19px;
+    display: grid;
+    place-items: center;
+    background: rgba(82,214,184,.16);
+    border: 1px solid rgba(82,214,184,.3);
+    color: ${COLORS.mint};
+    font-size: 25px;
+    z-index: 3;
+    box-shadow: 0 0 40px rgba(82,214,184,.12);
+  }
+
+  .network-node {
+    position: absolute;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: rgba(255,255,255,.09);
+    border: 1px solid rgba(255,255,255,.13);
+    backdrop-filter: blur(8px);
+    font-size: 15px;
+  }
+
+  .node-one { top: 6px; left: 111px; }
+  .node-two { right: 17px; top: 78px; }
+  .node-three { bottom: 4px; left: 111px; }
+  .node-four { left: 17px; top: 78px; }
+
+  /* STATS */
+
+  .impact-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 15px;
+    margin: 18px 0 34px;
+  }
+
+  .impact-card {
+    background: rgba(255,255,255,.92);
+    border: 1px solid ${COLORS.border};
+    border-radius: 20px;
+    padding: 19px;
+    box-shadow: 0 10px 30px rgba(7,26,47,.045);
+    transition: .2s ease;
+  }
+
+  .impact-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 17px 38px rgba(7,26,47,.08);
+  }
+
+  .impact-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: ${COLORS.softGreen};
+    font-size: 17px;
+    margin-bottom: 14px;
+  }
+
+  .impact-value {
+    font-size: 27px;
+    font-weight: 950;
+    letter-spacing: -.045em;
+    color: ${COLORS.navy};
+  }
+
+  .impact-label {
+    margin-top: 4px;
+    color: ${COLORS.muted};
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .impact-trend {
+    float: right;
+    color: ${COLORS.emerald};
+    font-size: 11px;
+    font-weight: 900;
+    background: ${COLORS.softGreen};
+    border-radius: 999px;
+    padding: 5px 8px;
+  }
+
+  /* SECTION */
+
+  .section {
+    margin-top: 34px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 17px;
+  }
+
+  .section-kicker {
+    color: ${COLORS.emerald};
+    text-transform: uppercase;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .12em;
+    margin-bottom: 5px;
+  }
+
+  .section-title {
+    margin: 0;
+    color: ${COLORS.navy};
+    font-size: 23px;
+    letter-spacing: -.035em;
+    font-weight: 950;
+  }
+
+  .section-description {
+    margin: 5px 0 0;
+    color: ${COLORS.muted};
+    font-size: 13px;
+  }
+
+  .section-count {
+    padding: 8px 11px;
+    border-radius: 999px;
+    background: white;
+    border: 1px solid ${COLORS.border};
+    color: ${COLORS.muted};
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  /* DONATIONS */
+
+  .donations-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap: 18px;
+  }
+
+  .donation-card {
+    overflow: hidden;
+    background: white;
+    border: 1px solid ${COLORS.border};
+    border-radius: 23px;
+    box-shadow: 0 12px 35px rgba(7,26,47,.055);
+    transition: .25s ease;
+  }
+
+  .donation-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 22px 48px rgba(7,26,47,.11);
+    border-color: rgba(22,160,133,.28);
+  }
+
+  .donation-image-wrap {
+    position: relative;
+    height: 190px;
+    overflow: hidden;
+    background: #e9eef2;
+  }
+
+  .donation-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .4s ease;
+  }
+
+  .donation-card:hover .donation-image {
+    transform: scale(1.045);
+  }
+
+  .live-badge {
+    position: absolute;
+    left: 13px;
+    top: 13px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(7,26,47,.78);
+    color: white;
+    backdrop-filter: blur(10px);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .04em;
+  }
+
+  .live-badge::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: ${COLORS.mint};
+  }
+
+  .food-type {
+    position: absolute;
+    right: 13px;
+    top: 13px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.93);
+    color: ${COLORS.navy};
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .donation-body {
+    padding: 19px;
+  }
+
+  .donation-title-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .donation-title {
+    margin: 0;
+    color: ${COLORS.navy};
+    font-size: 17px;
+    font-weight: 950;
+    letter-spacing: -.025em;
+  }
+
+  .veg-chip {
+    flex-shrink: 0;
+    padding: 5px 8px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 950;
+    border: 1px solid rgba(22,160,133,.17);
+    color: ${COLORS.emerald};
+    background: ${COLORS.softGreen};
+  }
+
+  .nonveg-chip {
+    color: #C24141;
+    background: #FFF0F0;
+    border-color: #F7D3D3;
+  }
+
+  .donation-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 14px 0;
+  }
+
+  .meta-pill {
+    padding: 7px 9px;
+    border-radius: 9px;
+    background: #F6F8FA;
+    color: ${COLORS.muted};
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .freshness-box {
+    padding: 12px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #F1FBF8, #F8FCFB);
+    border: 1px solid rgba(22,160,133,.11);
+    margin-bottom: 14px;
+  }
+
+  .freshness-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .freshness-label {
+    color: ${COLORS.navy};
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .04em;
+  }
+
+  .freshness-value {
+    color: ${COLORS.emerald};
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .freshness-track {
+    height: 5px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #DCECE8;
+  }
+
+  .freshness-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, ${COLORS.emerald}, ${COLORS.mint});
+  }
+
+  .view-button {
+    width: 100%;
+    border: 0;
+    border-radius: 12px;
+    padding: 12px;
+    background: ${COLORS.navy};
+    color: white;
+    font-weight: 900;
+    cursor: pointer;
+    transition: .2s ease;
+  }
+
+  .view-button:hover {
+    background: ${COLORS.emerald};
+    transform: translateY(-1px);
+  }
+
+  /* ORDERS */
+
+  .orders-layout {
+    display: grid;
+    grid-template-columns: 1.2fr .8fr;
+    gap: 18px;
+  }
+
+  .orders-card,
+  .organization-card {
+    background: white;
+    border: 1px solid ${COLORS.border};
+    border-radius: 23px;
+    box-shadow: 0 12px 35px rgba(7,26,47,.045);
+  }
+
+  .orders-card {
+    padding: 20px;
+  }
+
+  .order-item {
+    padding: 17px 0;
+    border-bottom: 1px solid #EDF1F4;
+  }
+
+  .order-item:first-child {
+    padding-top: 2px;
+  }
+
+  .order-item:last-child {
+    border-bottom: 0;
+    padding-bottom: 2px;
+  }
+
+  .order-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .order-name {
+    margin: 0;
+    color: ${COLORS.navy};
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .status-pill {
+    padding: 6px 9px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 950;
+  }
+
+  .status-success {
+    background: #E8F8F4;
+    color: #12846E;
+  }
+
+  .status-info {
+    background: #ECF4FF;
+    color: #3475B8;
+  }
+
+  .status-warning {
+    background: #FFF7E5;
+    color: #B77908;
+  }
+
+  .order-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 15px;
+    margin-top: 9px;
+    color: ${COLORS.muted};
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .order-details span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* TIMELINE */
+
+  .timeline {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
+  .timeline-step {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+
+  .timeline-dot {
+    width: 23px;
+    height: 23px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    background: #E9EEF2;
+    color: #9AA8B4;
+    font-size: 9px;
+    font-weight: 950;
+  }
+
+  .timeline-dot.active {
+    background: ${COLORS.emerald};
+    color: white;
+    box-shadow: 0 0 0 5px rgba(22,160,133,.09);
+  }
+
+  .timeline-line {
+    height: 2px;
+    flex: 1;
+    background: #E6EBEF;
+  }
+
+  .timeline-line.active {
+    background: ${COLORS.emerald};
+  }
+
+  /* ORG CARD */
+
+  .organization-card {
+    padding: 23px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .organization-card::before {
+    content: "";
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: rgba(22,160,133,.06);
+    right: -80px;
+    top: -80px;
+  }
+
+  .org-label {
+    color: ${COLORS.muted};
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    font-size: 9px;
+    font-weight: 950;
+  }
+
+  .org-name {
+    margin: 7px 0 4px;
+    color: ${COLORS.navy};
+    font-size: 21px;
+    font-weight: 950;
+    letter-spacing: -.04em;
+  }
+
+  .org-type {
+    color: ${COLORS.muted};
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .org-divider {
+    height: 1px;
+    background: #EDF1F4;
+    margin: 18px 0;
+  }
+
+  .org-stats {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 8px;
+  }
+
+  .org-stat {
+    padding: 11px 8px;
+    text-align: center;
+    background: #F7F9FA;
+    border-radius: 12px;
+  }
+
+  .org-stat strong {
+    display: block;
+    color: ${COLORS.navy};
+    font-size: 16px;
+    font-weight: 950;
+  }
+
+  .org-stat span {
+    display: block;
+    color: ${COLORS.muted};
+    margin-top: 3px;
+    font-size: 8px;
+    font-weight: 850;
+  }
+
+  .trust-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 17px;
+  }
+
+  .trust-stars {
+    color: #E7A900;
+    letter-spacing: 2px;
+    font-size: 12px;
+  }
+
+  .trust-text {
+    color: ${COLORS.muted};
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  /* EMPTY */
+
+  .empty-state {
+    background: white;
+    border: 1px dashed #CBD6DE;
+    border-radius: 22px;
+    padding: 55px 25px;
+    text-align: center;
+  }
+
+  .empty-icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 14px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    background: ${COLORS.softGreen};
+    font-size: 24px;
+  }
+
+  .empty-state h3 {
+    margin: 0;
+    color: ${COLORS.navy};
+    font-size: 17px;
+    font-weight: 950;
+  }
+
+  .empty-state p {
+    max-width: 480px;
+    margin: 8px auto 0;
+    color: ${COLORS.muted};
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  /* REGISTER */
+
+  .registration-alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 17px 20px;
+    margin-bottom: 18px;
+    border-radius: 19px;
+    background: linear-gradient(135deg, #FFF8E9, #FFFDF8);
+    border: 1px solid #F4DFB1;
+    box-shadow: 0 8px 25px rgba(181,129,30,.05);
+  }
+
+  .registration-alert-left {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  }
+
+  .alert-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: #FFF0C9;
+    font-size: 17px;
+  }
+
+  .registration-alert h3 {
+    margin: 0;
+    color: #7C5A12;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .registration-alert p {
+    margin: 3px 0 0;
+    color: #9A7934;
+    font-size: 11px;
+  }
+
+  .register-button {
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 11px;
+    padding: 11px 15px;
+    background: ${COLORS.navy};
+    color: white;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  /* TOAST */
+
+  .premium-toast {
+    position: fixed;
+    z-index: 5000;
+    right: 24px;
+    top: 24px;
+    padding: 14px 17px;
+    border-radius: 14px;
+    background: ${COLORS.navy};
+    color: white;
+    box-shadow: 0 18px 45px rgba(7,26,47,.2);
+    font-size: 12px;
+    font-weight: 800;
+    animation: toastIn .25s ease;
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* MODALS */
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(3,14,26,.68);
+    backdrop-filter: blur(10px);
+    animation: fadeIn .2s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal {
+    width: min(1120px, 100%);
+    max-height: 92vh;
+    overflow: hidden;
+    border-radius: 26px;
+    background: white;
+    box-shadow: 0 35px 100px rgba(0,0,0,.28);
+    animation: modalUp .25s ease;
+  }
+
+  @keyframes modalUp {
+    from { opacity: 0; transform: translateY(18px) scale(.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-small {
+    width: min(540px, 100%);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding: 20px 23px;
+    border-bottom: 1px solid #EDF1F4;
+  }
+
+  .modal-header h2 {
+    margin: 0;
+    color: ${COLORS.navy};
+    font-size: 18px;
+    font-weight: 950;
+    letter-spacing: -.025em;
+  }
+
+  .close-button {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 10px;
+    background: #F1F4F6;
+    color: ${COLORS.navy};
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  .modal-content {
+    overflow-y: auto;
+    max-height: calc(92vh - 76px);
+  }
+
+  .details-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .details-left {
+    padding: 22px;
+    border-right: 1px solid #EDF1F4;
+  }
+
+  .details-right {
+    padding: 22px;
+    background: #FBFCFD;
+  }
+
+  .details-image {
+    width: 100%;
+    height: 255px;
+    object-fit: cover;
+    border-radius: 18px;
+  }
+
+  .ai-verification {
+    margin-top: 14px;
+    padding: 15px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, ${COLORS.navy}, ${COLORS.navy2});
+    color: white;
+  }
+
+  .ai-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .ai-score {
+    margin-top: 9px;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+
+  .ai-score strong {
+    font-size: 30px;
+    color: ${COLORS.mint};
+    font-weight: 950;
+  }
+
+  .ai-score span {
+    color: rgba(255,255,255,.6);
+    font-size: 11px;
+  }
+
+  .details-section {
+    margin-top: 20px;
+  }
+
+  .details-section h3 {
+    margin: 0 0 10px;
+    color: ${COLORS.navy};
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .detail-box {
+    padding: 11px;
+    border-radius: 11px;
+    background: #F6F8FA;
+  }
+
+  .detail-box small {
+    display: block;
+    color: ${COLORS.muted};
+    font-size: 8px;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+
+  .detail-box strong {
+    display: block;
+    margin-top: 3px;
+    color: ${COLORS.navy};
+    font-size: 11px;
+  }
+
+  .location-box {
+    padding: 12px;
+    border-radius: 12px;
+    background: ${COLORS.softGreen};
+    color: ${COLORS.navy};
+    font-size: 11px;
+    line-height: 1.5;
+    font-weight: 750;
+  }
+
+  .chat-card {
+    padding: 17px;
+    border: 1px solid ${COLORS.border};
+    border-radius: 17px;
+    background: white;
+  }
+
+  .chat-card h3 {
+    margin: 0;
+    color: ${COLORS.navy};
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .chat-subtitle {
+    margin: 5px 0 14px;
+    color: ${COLORS.muted};
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .chat-messages {
+    min-height: 130px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  .message-row {
+    margin-bottom: 10px;
+  }
+
+  .message-row.me {
+    text-align: right;
+  }
+
+  .message-name {
+    display: block;
+    color: ${COLORS.muted};
+    font-size: 8px;
+    font-weight: 850;
+    margin-bottom: 3px;
+  }
+
+  .message-bubble {
+    display: inline-block;
+    max-width: 85%;
+    padding: 9px 11px;
+    border-radius: 11px;
+    background: #F0F3F5;
+    color: ${COLORS.text};
+    font-size: 10px;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  .message-row.me .message-bubble {
+    background: ${COLORS.navy};
+    color: white;
+  }
+
+  .chat-form {
+    display: flex;
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  .chat-form input {
+    min-width: 0;
+    flex: 1;
+    border: 1px solid ${COLORS.border};
+    border-radius: 10px;
+    padding: 10px;
+    outline: none;
+    font-size: 10px;
+  }
+
+  .chat-form input:focus {
+    border-color: ${COLORS.emerald};
+  }
+
+  .send-button {
+    border: 0;
+    border-radius: 10px;
+    padding: 0 13px;
+    background: ${COLORS.emerald};
+    color: white;
+    font-size: 10px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .request-box {
+    margin-top: 14px;
+    padding: 16px;
+    border-radius: 17px;
+    background: linear-gradient(135deg, #F0FBF8, #FAFEFD);
+    border: 1px solid rgba(22,160,133,.14);
+  }
+
+  .request-box p {
+    margin: 0 0 11px;
+    color: ${COLORS.text};
+    font-size: 11px;
+    line-height: 1.5;
+    font-weight: 750;
+  }
+
+  .request-button {
+    width: 100%;
+    border: 0;
+    border-radius: 11px;
+    padding: 12px;
+    background: ${COLORS.emerald};
+    color: white;
+    font-weight: 950;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .request-button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+  }
+
+  .auth-box {
+    padding: 30px;
+    text-align: center;
+  }
+
+  .auth-icon {
+    width: 55px;
+    height: 55px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 13px;
+    border-radius: 17px;
+    background: ${COLORS.softGreen};
+    font-size: 22px;
+  }
+
+  /* FORM */
+
+  .form {
+    padding: 22px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 13px;
+  }
+
+  .field.full {
+    grid-column: 1 / -1;
+  }
+
+  .field label {
+    color: ${COLORS.navy};
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    border: 1px solid ${COLORS.border};
+    border-radius: 11px;
+    padding: 11px 12px;
+    outline: none;
+    color: ${COLORS.text};
+    background: #FBFCFD;
+    font: inherit;
+    font-size: 11px;
+  }
+
+  .field textarea {
+    resize: vertical;
+  }
+
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: ${COLORS.emerald};
+    background: white;
+    box-shadow: 0 0 0 3px rgba(22,160,133,.07);
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 9px;
+    padding-top: 16px;
+    border-top: 1px solid #EDF1F4;
+  }
+
+  .cancel-button {
+    border: 1px solid ${COLORS.border};
+    border-radius: 10px;
+    padding: 11px 15px;
+    background: white;
+    color: ${COLORS.muted};
+    font-weight: 850;
+    cursor: pointer;
+  }
+
+  .confirm-button {
+    border: 0;
+    border-radius: 10px;
+    padding: 11px 16px;
+    background: ${COLORS.navy};
+    color: white;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  /* RESPONSIVE */
+
+  @media (max-width: 1100px) {
+    .hero-network {
+      opacity: .35;
+      right: -20px;
+    }
+
+    .donations-grid {
+      grid-template-columns: repeat(2, minmax(0,1fr));
+    }
+
+    .orders-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 800px) {
+    .receiver-shell {
+      padding: 20px 15px 45px;
+    }
+
+    .premium-hero {
+      padding: 29px 23px;
+      min-height: 330px;
+    }
+
+    .hero-network {
+      opacity: .15;
+      right: -45px;
+      top: 125px;
+    }
+
+    .impact-grid {
+      grid-template-columns: repeat(2,1fr);
+    }
+
+    .details-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .details-left {
+      border-right: 0;
+      border-bottom: 1px solid #EDF1F4;
+    }
+
+    .registration-alert {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .register-button {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .receiver-topbar {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .topbar-meta {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .premium-hero {
+      border-radius: 23px;
+    }
+
+    .hero-title {
+      font-size: 2.15rem;
+    }
+
+    .donations-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .impact-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .impact-card {
+      padding: 14px;
+    }
+
+    .impact-value {
+      font-size: 22px;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .field.full {
+      grid-column: auto;
+    }
+
+    .details-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .modal-backdrop {
+      padding: 10px;
+    }
+
+    .modal {
+      border-radius: 20px;
+    }
+  }
+`;
 
 export default function ReceiverPage() {
   const { user } = useUser();
   const { isSignedIn } = useAuth();
   const navigate = useNavigate();
-  
-  const { 
-    donations, 
-    orders, 
+
+  const {
+    donations,
+    orders,
     messages,
     toast,
     isOrgRegistered,
     orgDetails,
     registerOrganization,
-    showToast,
     requestFood,
-    sendChatMessage
+    sendChatMessage,
   } = useContext(MealBridgeContext);
 
-  // States
+  /* =========================================================
+     STATE
+  ========================================================= */
+
   const [selectedItem, setSelectedItem] = useState(null);
-  const currentItem = donations.find((d) => d.id === selectedItem?.id) || selectedItem;
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-  
-  // Registration Form Fields State
+
   const [orgName, setOrgName] = useState("");
   const [orgType, setOrgType] = useState("NGO");
   const [regNum, setRegNum] = useState("");
-  const [contactName, setContactName] = useState(user?.fullName || "");
-  const [email, setEmail] = useState(user?.primaryEmailAddress?.emailAddress || "");
+  const [contactName, setContactName] = useState(
+    user?.fullName || ""
+  );
+  const [email, setEmail] = useState(
+    user?.primaryEmailAddress?.emailAddress || ""
+  );
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
@@ -43,16 +1497,58 @@ export default function ReceiverPage() {
   const [pinCode, setPinCode] = useState("");
   const [dailyServed, setDailyServed] = useState(50);
   const [description, setDescription] = useState("");
-  
-  // Request Expectations State
+
   const [expectedPeople, setExpectedPeople] = useState(10);
   const [donorMessage, setDonorMessage] = useState("");
-  
-  // Chat state specific to this listing
   const [questionText, setQuestionText] = useState("");
 
-  // Tooltip helper
-  const [showTooltipForId, setShowTooltipForId] = useState(null);
+  /* =========================================================
+     DATA
+  ========================================================= */
+
+  const availableItems = (donations || []).filter(
+    (d) =>
+      d.status === "Available for NGO Matching" ||
+      d.status === "Matching Pending"
+  );
+
+  const myNGOOrders = (orders || []).filter(
+    (o) =>
+      o.ngoName ===
+      (orgDetails?.orgName || "City Hope Kitchen")
+  );
+
+  const activeMessages = selectedItem
+    ? (messages || []).filter(
+        (m) => m.donationId === selectedItem.id
+      )
+    : [];
+
+  const totalServings = availableItems.reduce(
+    (sum, item) => sum + Number(item.quantity || 0),
+    0
+  );
+
+  const completedOrders = myNGOOrders.filter(
+    (o) => o.status === "Completed"
+  ).length;
+
+  const pendingOrders = myNGOOrders.filter(
+    (o) =>
+      o.status !== "Completed" &&
+      o.status !== "Picked Up"
+  ).length;
+
+  const peopleServed =
+    myNGOOrders.reduce(
+      (sum, order) =>
+        sum + Number(order.expectedPeople || 0),
+      0
+    ) || 0;
+
+  /* =========================================================
+     ACTIONS
+  ========================================================= */
 
   const openDetails = (item) => {
     setSelectedItem(item);
@@ -62,6 +1558,7 @@ export default function ReceiverPage() {
 
   const handleRegisterSubmit = (e) => {
     e.preventDefault();
+
     const details = {
       orgName,
       orgType,
@@ -76,19 +1573,22 @@ export default function ReceiverPage() {
       dailyServed: Number(dailyServed),
       description,
     };
+
     registerOrganization(details);
     setIsRegisterModalOpen(false);
   };
 
   const handleConfirmRequest = (e) => {
     e.preventDefault();
+
     if (!selectedItem) return;
 
     requestFood(
-      selectedItem.id, 
-      expectedPeople, 
+      selectedItem.id,
+      Number(expectedPeople),
       donorMessage
     );
+
     setIsRequestOpen(false);
     setIsDetailsOpen(false);
     setDonorMessage("");
@@ -96,473 +1596,1671 @@ export default function ReceiverPage() {
 
   const handleSendQuestion = (e) => {
     e.preventDefault();
+
     if (!questionText.trim() || !selectedItem) return;
 
-    const senderName = orgDetails?.orgName || user?.fullName || "City Hope Kitchen";
-    sendChatMessage(selectedItem.id, "receiver", senderName, questionText.trim());
+    const senderName =
+      orgDetails?.orgName ||
+      user?.fullName ||
+      "City Hope Kitchen";
+
+    sendChatMessage(
+      selectedItem.id,
+      "receiver",
+      senderName,
+      questionText.trim()
+    );
+
     setQuestionText("");
   };
 
   const handleAuthRedirect = () => {
-    sessionStorage.setItem("mealbridge-role", "receiver");
+    sessionStorage.setItem(
+      "mealbridge-role",
+      "receiver"
+    );
+
     navigate("/login");
   };
 
-  // Filter donations to only show matching-ready items
-  const availableItems = donations.filter(
-    (d) => d.status === "Available for NGO Matching" || d.status === "Matching Pending"
-  );
-
-  // My Orders list ( NGO requests matched by name )
-  const myNGOOrders = orders.filter(
-    (o) => o.ngoName === (orgDetails?.orgName || "City Hope Kitchen")
-  );
-
-  // Chat messages for the selected donation
-  const activeMessages = selectedItem 
-    ? messages.filter(m => m.donationId === selectedItem.id)
-    : [];
-
-  const getStatusColor = (status) => {
+  const getStatusClass = (status) => {
     switch (status) {
-      case "Pending": return "warning";
-      case "Accepted": return "info";
-      case "Preparing": return "info";
-      case "Ready for Pickup": return "success";
-      case "Picked Up": return "info";
-      case "Completed": return "success";
-      default: return "success";
+      case "Pending":
+        return "status-warning";
+
+      case "Accepted":
+      case "Preparing":
+      case "Picked Up":
+        return "status-info";
+
+      case "Ready for Pickup":
+      case "Completed":
+        return "status-success";
+
+      default:
+        return "status-success";
     }
   };
 
-  const content = (
-    <div className="receiver-portal-container">
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`toast-card ${toast.type}`}>
-          <span>{toast.message}</span>
-        </div>
-      )}
+  const getTimelineIndex = (status) => {
+    switch (status) {
+      case "Pending":
+        return 0;
+      case "Accepted":
+        return 1;
+      case "Preparing":
+        return 2;
+      case "Ready for Pickup":
+        return 3;
+      case "Picked Up":
+        return 4;
+      case "Completed":
+        return 5;
+      default:
+        return 0;
+    }
+  };
 
-      {/* Unregistered Banner Alert */}
-      {isSignedIn && !isOrgRegistered && (
-        <div className="unregistered-banner-alert animate-fade-in" style={{
-          background: "linear-gradient(135deg, #ff8a00, #ffb547)",
-          color: "white",
-          padding: "20px 32px",
-          borderRadius: "20px",
-          marginBottom: "24px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          boxShadow: "0 10px 25px rgba(255, 138, 0, 0.15)",
-          flexWrap: "wrap",
-          gap: "16px"
-        }}>
-          <div>
-            <h3 style={{ margin: "0 0 4px", fontSize: "1.1rem", fontWeight: "800" }}>⚠️ Organization Not Registered</h3>
-            <p style={{ margin: "0", fontSize: "0.9rem", opacity: "0.9" }}>Please register your organization details to enable food donation matching and submit portions expectations.</p>
-          </div>
-          <button 
-            onClick={() => setIsRegisterModalOpen(true)}
-            style={{
-              padding: "10px 20px",
-              borderRadius: "999px",
-              background: "white",
-              color: "#ff8a00",
-              border: "none",
-              fontWeight: "800",
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
-              transition: "transform 0.2s"
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.03)"}
-            onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-          >
-            Register Your Organization
-          </button>
-        </div>
-      )}
+  /* =========================================================
+     DONATION CARD
+  ========================================================= */
 
-      {/* Hero Welcome banner */}
-      <div className="dashboard-hero-card">
-        <div className="hero-text-container">
-          <h1>Hi, {orgDetails?.orgName || user?.firstName || "NGO Partner"} 👋</h1>
-          <p className="gradient-subtext">"Find fresh surplus food available near your organization."</p>
-        </div>
-      </div>
+  const DonationCard = ({ item }) => {
+    const freshness =
+      Number(item.freshnessScore) ||
+      Number(item.aiFreshnessScore) ||
+      91;
 
-      {/* Available Food Donations section */}
-      <section className="dashboard-section" style={{ marginTop: "40px" }}>
-        <h2 className="section-title">Available Food Donations</h2>
-        
-        {availableItems.length === 0 ? (
-          <div className="empty-listing-panel">
-            <span className="empty-icon">🍽️</span>
-            <h3>No food items available right now</h3>
-            <p>Check back shortly. When local restaurants and vendors register fresh surplus meals, they will appear here instantly.</p>
-          </div>
-        ) : (
-          <div className="donations-grid-custom">
-            {availableItems.map((item) => (
-              <article key={item.id} className="donation-card-custom">
-                <img src={item.imageUrl} alt={item.name} className="donation-card-img" />
-                <div className="donation-card-body">
-                  <div className="card-title-row">
-                    <h3>{item.name}</h3>
-                    <span className={`veg-badge ${item.vegNonVeg === "Veg" ? "veg" : "non-veg"}`}>
-                      {item.vegNonVeg === "Veg" ? "🟢 Veg" : "🔴 Non-Veg"}
-                    </span>
-                  </div>
-                  {item.freshnessLabel && (
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: item.freshnessLabel === 'fresh' ? "rgba(5, 150, 105, 0.1)" : item.freshnessLabel === 'spoiled' ? "rgba(239, 68, 68, 0.1)" : "rgba(245, 158, 11, 0.1)", color: item.freshnessLabel === 'fresh' ? "var(--primary-color)" : item.freshnessLabel === 'spoiled' ? "#ef4444" : "#d97706", padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: "700", marginBottom: "8px" }}>
-                      <span>🤖 AI: {item.freshnessLabel.toUpperCase()} ({item.freshnessScore}%)</span>
-                    </div>
-                  )}
-                  <p className="cooking-time">🕒 Cooking: {new Date(item.cookingTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                  <div className="card-spec-row">
-                    <span className="spec-pill">{item.quantity} Servings</span>
-                    <span className={`status-badge-custom ${item.status.replace(/\s+/g, '-').toLowerCase()}`}>
-                      {item.status === "Matching Pending" ? "Requested" : "Available"}
-                    </span>
-                  </div>
-                  <button className="btn-full-width" onClick={() => openDetails(item)}>View Details</button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Dedicated My Orders Section */}
-      {isSignedIn && (
-        <section className="dashboard-section" style={{ marginTop: "48px" }}>
-          <h2 className="section-title">My Orders</h2>
-          {myNGOOrders.length === 0 ? (
-            <div className="empty-listing-panel">
-              <span className="empty-icon">📜</span>
-              <h3>No requests submitted yet</h3>
-              <p>Requested food items and their live pickup schedules will appear here.</p>
-            </div>
+    return (
+      <article className="donation-card">
+        <div className="donation-image-wrap">
+          {item.imageUrl ? (
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className="donation-image"
+            />
           ) : (
-            <div className="order-grid">
-              {myNGOOrders.map((order) => (
-                <article key={order.id} className="order-card-custom">
-                  <div className="order-header">
-                    <h4>🍱 {order.foodRequested}</h4>
-                    <span className={`badge ${getStatusColor(order.status)}`}>{order.status}</span>
-                  </div>
-                  <div className="order-body" style={{ marginTop: "12px", gap: "6px" }}>
-                    <p><strong>Donor Name:</strong> {order.ngoName === "City Hope Kitchen" ? "Fresh Bites Catering" : "Your Organization"}</p>
-                    <p><strong>Meals Requested:</strong> {order.expectedPeople} servings</p>
-                    <p><strong>Request Time:</strong> {new Date(order.orderTime).toLocaleDateString()} {new Date(order.orderTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                    {order.prepTime && <p><strong>Estimated Pickup:</strong> {order.prepTime}</p>}
-                    {order.receiverMessage && <p><strong>My Message:</strong> "{order.receiverMessage}"</p>}
-                  </div>
-                </article>
-              ))}
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "grid",
+                placeItems: "center",
+                background:
+                  "linear-gradient(135deg,#DCEDE9,#EEF5F4)",
+                fontSize: "45px",
+              }}
+            >
+              🍱
             </div>
           )}
-        </section>
-      )}
 
-      {/* VIEW DETAILS & CHAT SLIDE OVER / MODAL */}
-      {isDetailsOpen && currentItem && (
-        <div className="modal-backdrop-custom animate-fade-in" onClick={() => setIsDetailsOpen(false)}>
-          <div className="modal-card-custom wide-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header-custom">
-              <h2>Available Rescued Meals: {currentItem.name}</h2>
-              <button className="close-btn" onClick={() => setIsDetailsOpen(false)}>×</button>
+          <div className="live-badge">
+            LIVE DONATION
+          </div>
+
+          <div className="food-type">
+            {item.category || "Prepared Food"}
+          </div>
+        </div>
+
+        <div className="donation-body">
+          <div className="donation-title-row">
+            <h3 className="donation-title">
+              {item.name}
+            </h3>
+
+            <span
+              className={`veg-chip ${
+                item.vegNonVeg !== "Veg"
+                  ? "nonveg-chip"
+                  : ""
+              }`}
+            >
+              {item.vegNonVeg === "Veg"
+                ? "VEG"
+                : "NON-VEG"}
+            </span>
+          </div>
+
+          <div className="donation-meta">
+            <span className="meta-pill">
+              🍱 {item.quantity || 0} servings
+            </span>
+
+            <span className="meta-pill">
+              🕒{" "}
+              {item.cookingTime
+                ? new Date(
+                    item.cookingTime
+                  ).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Fresh"}
+            </span>
+          </div>
+
+          <div className="freshness-box">
+            <div className="freshness-top">
+              <span className="freshness-label">
+                ✦ AI FRESHNESS CHECK
+              </span>
+
+              <span className="freshness-value">
+                {freshness}%
+              </span>
             </div>
-            
-            <div className="wide-modal-content-split">
-              {/* Left Column: Details */}
-              <div className="split-column-left">
-                <img src={currentItem.imageUrl} alt={currentItem.name} className="details-img-split" />
-                
-                <div className="details-section-custom">
-                  <h3>🍲 Recipe & Portion Info</h3>
-                  <div className="details-grid-specs">
-                    <p><strong>Name:</strong> {currentItem.name}</p>
-                    <p><strong>Category:</strong> {currentItem.category}</p>
-                    <p><strong>Veg / Non-Veg:</strong> {currentItem.vegNonVeg}</p>
-                    <p><strong>Quantity:</strong> {currentItem.quantity} servings</p>
-                    <p><strong>Transportation Available:</strong> {currentItem.needTransportation === "Yes" ? "No (Donor Requesting Volunteer Help)" : "Yes (Self-arranged/Pickup)"}</p>
-                  </div>
+
+            <div className="freshness-track">
+              <div
+                className="freshness-fill"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.max(0, freshness)
+                  )}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          <button
+            className="view-button"
+            onClick={() => openDetails(item)}
+          >
+            View Donation →
+          </button>
+        </div>
+      </article>
+    );
+  };
+
+  /* =========================================================
+     CONTENT
+  ========================================================= */
+
+  const content = (
+    <>
+      <style>{styles}</style>
+
+      <div className="receiver-page">
+        <div className="receiver-shell">
+
+          {/* TOAST */}
+          {toast && (
+            <div className="premium-toast">
+              {toast.message}
+            </div>
+          )}
+
+          {/* TOP BAR */}
+          <div className="receiver-topbar">
+            <div>
+              <div className="eyebrow">
+                <span className="live-dot" />
+                MealBridge Network
+              </div>
+            </div>
+
+            <div className="topbar-meta">
+              <span>
+                {availableItems.length} live
+                donation
+                {availableItems.length !== 1
+                  ? "s"
+                  : ""}
+              </span>
+
+              {isOrgRegistered && (
+                <div className="verified-chip">
+                  <span className="verified-check">
+                    ✓
+                  </span>
+                  Verified Receiver
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* REGISTRATION ALERT */}
+          {isSignedIn && !isOrgRegistered && (
+            <div className="registration-alert">
+              <div className="registration-alert-left">
+                <div className="alert-icon">
+                  ⚡
                 </div>
 
-                <div className="details-section-custom">
-                  <h3>🕒 Timings</h3>
-                  <div className="details-grid-specs">
-                    <p><strong>Cooking Time:</strong> {new Date(currentItem.cookingTime).toLocaleString()}</p>
-                    <p><strong>Expiry Time:</strong> {new Date(currentItem.expiryTime).toLocaleString()}</p>
-                  </div>
-                </div>
+                <div>
+                  <h3>
+                    Complete your organization
+                    profile
+                  </h3>
 
-                <div className="details-section-custom">
-                  <h3>📍 Address details</h3>
-                  <p>{currentItem.pickupAddress}</p>
-                  <p className="gps-coordinate">Coordinates: {currentItem.gpsLocation}</p>
-                </div>
-
-                <div className="details-section-custom">
-                  <h3>📝 Description</h3>
-                  <p>{currentItem.description || "No description provided."}</p>
-                  <p><strong>Special Instructions:</strong> {currentItem.specialInstructions || "None."}</p>
+                  <p>
+                    Register your organization to
+                    unlock donation requests and
+                    matching.
+                  </p>
                 </div>
               </div>
 
-              {/* Right Column: Chat & Confirm Actions */}
-              <div className="split-column-right">
-                {isSignedIn ? (
-                  <>
-                    {/* Questions for Donor */}
-                    <div className="card-inner-chat">
-                      <h3>💬 Questions for Donor</h3>
-                      <p className="chat-subtitle">Ask questions directly regarding logistics, packaging, or dietaries.</p>
-                      
-                      <div className="inner-chat-messages">
-                        {activeMessages.length === 0 ? (
-                          <p className="empty-messages-placeholder">No questions asked yet. Start the conversation below!</p>
-                        ) : (
-                          activeMessages.map(m => (
-                            <div key={m.id} className={`chat-bubble-wrapper ${m.senderId === "receiver" ? "me" : "them"}`}>
-                              <span className="bubble-sender">{m.senderName}</span>
-                              <div className="chat-bubble">
-                                <p>{m.text}</p>
-                              </div>
-                            </div>
-                          ))
-                        )}
+              <button
+                className="register-button"
+                onClick={() =>
+                  setIsRegisterModalOpen(true)
+                }
+              >
+                Register Organization →
+              </button>
+            </div>
+          )}
+
+          {/* HERO */}
+          <section className="premium-hero">
+            <div className="hero-content">
+              <div className="hero-kicker">
+                Food Rescue Command Center
+              </div>
+
+              <h1 className="hero-title">
+                Turn surplus into
+                <br />
+                <span>real impact.</span>
+              </h1>
+
+              <p className="hero-description">
+                Welcome back,{" "}
+                <strong>
+                  {orgDetails?.orgName ||
+                    user?.firstName ||
+                    "NGO Partner"}
+                </strong>
+                . Discover verified surplus food,
+                connect with donors and get meals to
+                the people who need them.
+              </p>
+
+              <div className="hero-actions">
+                <button
+                  className="hero-primary"
+                  onClick={() =>
+                    document
+                      .getElementById(
+                        "available-donations"
+                      )
+                      ?.scrollIntoView({
+                        behavior: "smooth",
+                      })
+                  }
+                >
+                  Find Available Food →
+                </button>
+
+                <button
+                  className="hero-secondary"
+                  onClick={() =>
+                    document
+                      .getElementById(
+                        "my-orders"
+                      )
+                      ?.scrollIntoView({
+                        behavior: "smooth",
+                      })
+                  }
+                >
+                  View My Requests
+                </button>
+              </div>
+            </div>
+
+            <div className="hero-network">
+              <div className="network-ring ring-one" />
+              <div className="network-ring ring-two" />
+              <div className="network-ring ring-three" />
+
+              <div className="network-center">
+                ♻
+              </div>
+
+              <div className="network-node node-one">
+                🍱
+              </div>
+
+              <div className="network-node node-two">
+                🤝
+              </div>
+
+              <div className="network-node node-three">
+                ❤️
+              </div>
+
+              <div className="network-node node-four">
+                📍
+              </div>
+            </div>
+          </section>
+
+          {/* IMPACT STATS */}
+          <section className="impact-grid">
+            <div className="impact-card">
+              <span className="impact-trend">
+                LIVE
+              </span>
+
+              <div className="impact-icon">
+                🍱
+              </div>
+
+              <div className="impact-value">
+                {totalServings.toLocaleString()}
+              </div>
+
+              <div className="impact-label">
+                Meals available now
+              </div>
+            </div>
+
+            <div className="impact-card">
+              <span className="impact-trend">
+                ACTIVE
+              </span>
+
+              <div className="impact-icon">
+                🤝
+              </div>
+
+              <div className="impact-value">
+                {pendingOrders}
+              </div>
+
+              <div className="impact-label">
+                Active requests
+              </div>
+            </div>
+
+            <div className="impact-card">
+              <span className="impact-trend">
+                IMPACT
+              </span>
+
+              <div className="impact-icon">
+                ❤️
+              </div>
+
+              <div className="impact-value">
+                {peopleServed.toLocaleString()}
+              </div>
+
+              <div className="impact-label">
+                People reached
+              </div>
+            </div>
+
+            <div className="impact-card">
+              <span className="impact-trend">
+                DONE
+              </span>
+
+              <div className="impact-icon">
+                ✓
+              </div>
+
+              <div className="impact-value">
+                {completedOrders}
+              </div>
+
+              <div className="impact-label">
+                Completed pickups
+              </div>
+            </div>
+          </section>
+
+          {/* AVAILABLE FOOD */}
+          <section
+            className="section"
+            id="available-donations"
+          >
+            <div className="section-header">
+              <div>
+                <div className="section-kicker">
+                  Live food network
+                </div>
+
+                <h2 className="section-title">
+                  Available donations
+                </h2>
+
+                <p className="section-description">
+                  Fresh surplus food ready to be
+                  matched with your organization.
+                </p>
+              </div>
+
+              <div className="section-count">
+                {availableItems.length}{" "}
+                available
+              </div>
+            </div>
+
+            {availableItems.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  🍽️
+                </div>
+
+                <h3>
+                  No donations available right
+                  now
+                </h3>
+
+                <p>
+                  New surplus meals will appear
+                  here as soon as donors register
+                  them with MealBridge.
+                </p>
+              </div>
+            ) : (
+              <div className="donations-grid">
+                {availableItems.map((item) => (
+                  <DonationCard
+                    key={item.id}
+                    item={item}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ORDERS */}
+          {isSignedIn && (
+            <section
+              className="section"
+              id="my-orders"
+            >
+              <div className="section-header">
+                <div>
+                  <div className="section-kicker">
+                    Request management
+                  </div>
+
+                  <h2 className="section-title">
+                    My requests
+                  </h2>
+
+                  <p className="section-description">
+                    Track your food requests and
+                    pickup progress.
+                  </p>
+                </div>
+
+                <div className="section-count">
+                  {myNGOOrders.length} total
+                </div>
+              </div>
+
+              <div className="orders-layout">
+                <div className="orders-card">
+                  {myNGOOrders.length === 0 ? (
+                    <div
+                      style={{
+                        padding: "38px 10px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <div className="empty-icon">
+                        📦
                       </div>
 
-                      <form className="inner-chat-form" onSubmit={handleSendQuestion}>
-                        <input 
-                          type="text" 
-                          placeholder="Type a question (e.g. Is it freshly packed?)" 
-                          value={questionText} 
-                          onChange={(e) => setQuestionText(e.target.value)}
-                          required 
-                        />
-                        <button type="submit" className="chat-send-btn">Send</button>
-                      </form>
+                      <h3
+                        style={{
+                          margin: 0,
+                          color: COLORS.navy,
+                          fontSize: "16px",
+                        }}
+                      >
+                        No requests yet
+                      </h3>
+
+                      <p
+                        style={{
+                          margin:
+                            "7px auto 0",
+                          maxWidth:
+                            "380px",
+                          color:
+                            COLORS.muted,
+                          fontSize:
+                            "11px",
+                        }}
+                      >
+                        When you request surplus
+                        food, its live progress
+                        will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    myNGOOrders.map((order) => {
+                      const activeStep =
+                        getTimelineIndex(
+                          order.status
+                        );
+
+                      return (
+                        <div
+                          className="order-item"
+                          key={order.id}
+                        >
+                          <div className="order-top">
+                            <h3 className="order-name">
+                              🍱{" "}
+                              {order.foodRequested}
+                            </h3>
+
+                            <span
+                              className={`status-pill ${getStatusClass(
+                                order.status
+                              )}`}
+                            >
+                              {order.status}
+                            </span>
+                          </div>
+
+                          <div className="order-details">
+                            <span>
+                              👥{" "}
+                              {
+                                order.expectedPeople
+                              }{" "}
+                              servings
+                            </span>
+
+                            <span>
+                              🕒{" "}
+                              {order.orderTime
+                                ? new Date(
+                                    order.orderTime
+                                  ).toLocaleDateString()
+                                : "Recently"}
+                            </span>
+
+                            {order.prepTime && (
+                              <span>
+                                📍 Pickup{" "}
+                                {order.prepTime}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="timeline">
+                            {[
+                              "Requested",
+                              "Accepted",
+                              "Preparing",
+                              "Ready",
+                              "Pickup",
+                              "Done",
+                            ].map(
+                              (label, index) => (
+                                <React.Fragment
+                                  key={label}
+                                >
+                                  <div className="timeline-step">
+                                    <div
+                                      className={`timeline-dot ${
+                                        index <=
+                                        activeStep
+                                          ? "active"
+                                          : ""
+                                      }`}
+                                      title={
+                                        label
+                                      }
+                                    >
+                                      {index <
+                                      activeStep
+                                        ? "✓"
+                                        : index ===
+                                          activeStep
+                                        ? "•"
+                                        : ""}
+                                    </div>
+                                  </div>
+
+                                  {index <
+                                    5 && (
+                                    <div
+                                      className={`timeline-line ${
+                                        index <
+                                        activeStep
+                                          ? "active"
+                                          : ""
+                                      }`}
+                                    />
+                                  )}
+                                </React.Fragment>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* ORGANIZATION CARD */}
+                <div className="organization-card">
+                  <div className="org-label">
+                    Your organization
+                  </div>
+
+                  <h3 className="org-name">
+                    {orgDetails?.orgName ||
+                      "City Hope Kitchen"}
+                  </h3>
+
+                  <div className="org-type">
+                    {orgDetails?.orgType ||
+                      "Community Receiver"}
+                  </div>
+
+                  <div className="org-divider" />
+
+                  <div className="org-stats">
+                    <div className="org-stat">
+                      <strong>
+                        {peopleServed}
+                      </strong>
+                      <span>
+                        PEOPLE SERVED
+                      </span>
                     </div>
 
-                    {/* Confirm Action Box */}
-                    <div className="confirm-action-box" style={{ position: "relative" }}>
-                      {currentItem.status === "Matching Pending" ? (
-                        <div className="alert-box-info">
-                          <p>⏳ Request Pending Donor Approval.</p>
-                        </div>
+                    <div className="org-stat">
+                      <strong>
+                        {myNGOOrders.length}
+                      </strong>
+                      <span>
+                        REQUESTS
+                      </span>
+                    </div>
+
+                    <div className="org-stat">
+                      <strong>
+                        {completedOrders}
+                      </strong>
+                      <span>
+                        COMPLETED
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="trust-row">
+                    <span className="trust-stars">
+                      ★★★★★
+                    </span>
+
+                    <span className="trust-text">
+                      Community partner
+                    </span>
+                  </div>
+
+                  {!isOrgRegistered && (
+                    <button
+                      className="register-button"
+                      style={{
+                        width: "100%",
+                        marginTop: "17px",
+                      }}
+                      onClick={() =>
+                        setIsRegisterModalOpen(
+                          true
+                        )
+                      }
+                    >
+                      Complete Organization
+                      Profile
+                    </button>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* =================================================
+              DETAILS MODAL
+          ================================================= */}
+          {isDetailsOpen && selectedItem && (
+            <div
+              className="modal-backdrop"
+              onClick={() =>
+                setIsDetailsOpen(false)
+              }
+            >
+              <div
+                className="modal"
+                onClick={(e) =>
+                  e.stopPropagation()
+                }
+              >
+                <div className="modal-header">
+                  <h2>
+                    {selectedItem.name}
+                  </h2>
+
+                  <button
+                    className="close-button"
+                    onClick={() =>
+                      setIsDetailsOpen(false)
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="modal-content">
+                  <div className="details-layout">
+
+                    {/* LEFT */}
+                    <div className="details-left">
+                      {selectedItem.imageUrl ? (
+                        <img
+                          src={
+                            selectedItem.imageUrl
+                          }
+                          alt={
+                            selectedItem.name
+                          }
+                          className="details-image"
+                        />
                       ) : (
-                        <>
-                          <p>Satisfied with the details and chat answers?</p>
-                          
-                          {/* Tooltip trigger for disabled buttons */}
-                          <div 
-                            onMouseEnter={() => { if (!isOrgRegistered) setShowTooltipForId(currentItem.id); }}
-                            onMouseLeave={() => setShowTooltipForId(null)}
-                            style={{ display: "inline-block", width: "100%" }}
-                          >
-                            <button 
-                              className="confirm-request-btn" 
-                              onClick={() => { if (isOrgRegistered) setIsRequestOpen(true); }}
-                              disabled={!isOrgRegistered}
-                              style={{ 
-                                opacity: isOrgRegistered ? 1 : 0.5,
-                                cursor: isOrgRegistered ? "pointer" : "not-allowed"
+                        <div
+                          className="details-image"
+                          style={{
+                            display: "grid",
+                            placeItems:
+                              "center",
+                            background:
+                              "#E8F4F1",
+                            fontSize: "60px",
+                          }}
+                        >
+                          🍱
+                        </div>
+                      )}
+
+                      <div className="ai-verification">
+                        <div className="ai-title">
+                          <span>
+                            ✦ AI FOOD
+                            VERIFICATION
+                          </span>
+
+                          <span>
+                            VERIFIED
+                          </span>
+                        </div>
+
+                        <div className="ai-score">
+                          <strong>
+                            {Number(
+                              selectedItem.freshnessScore ||
+                                selectedItem.aiFreshnessScore ||
+                                91
+                            )}
+                            %
+                          </strong>
+
+                          <span>
+                            freshness confidence
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="details-section">
+                        <h3>
+                          Food information
+                        </h3>
+
+                        <div className="details-grid">
+                          <div className="detail-box">
+                            <small>
+                              Category
+                            </small>
+
+                            <strong>
+                              {
+                                selectedItem.category
+                              }
+                            </strong>
+                          </div>
+
+                          <div className="detail-box">
+                            <small>
+                              Type
+                            </small>
+
+                            <strong>
+                              {
+                                selectedItem.vegNonVeg
+                              }
+                            </strong>
+                          </div>
+
+                          <div className="detail-box">
+                            <small>
+                              Servings
+                            </small>
+
+                            <strong>
+                              {
+                                selectedItem.quantity
+                              }
+                            </strong>
+                          </div>
+
+                          <div className="detail-box">
+                            <small>
+                              Transport
+                            </small>
+
+                            <strong>
+                              {selectedItem.needTransportation ===
+                              "Yes"
+                                ? "Volunteer needed"
+                                : "Self pickup"}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="details-section">
+                        <h3>
+                          Timings
+                        </h3>
+
+                        <div className="details-grid">
+                          <div className="detail-box">
+                            <small>
+                              Cooking
+                            </small>
+
+                            <strong>
+                              {selectedItem.cookingTime
+                                ? new Date(
+                                    selectedItem.cookingTime
+                                  ).toLocaleString()
+                                : "—"}
+                            </strong>
+                          </div>
+
+                          <div className="detail-box">
+                            <small>
+                              Expires
+                            </small>
+
+                            <strong>
+                              {selectedItem.expiryTime
+                                ? new Date(
+                                    selectedItem.expiryTime
+                                  ).toLocaleString()
+                                : "—"}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="details-section">
+                        <h3>
+                          Pickup location
+                        </h3>
+
+                        <div className="location-box">
+                          📍{" "}
+                          {
+                            selectedItem.pickupAddress
+                          }
+
+                          {selectedItem.gpsLocation && (
+                            <div
+                              style={{
+                                marginTop:
+                                  "5px",
+                                opacity: .65,
+                                fontSize:
+                                  "9px",
                               }}
                             >
-                              Confirm Request
-                            </button>
-                            
-                            {!isOrgRegistered && showTooltipForId === currentItem.id && (
-                              <div style={{
-                                position: "absolute",
-                                bottom: "100%",
-                                left: "50%",
-                                transform: "translateX(-50%)",
-                                background: "#ea5455",
-                                color: "white",
-                                padding: "8px 12px",
-                                borderRadius: "8px",
-                                fontSize: "0.75rem",
-                                fontWeight: "700",
-                                zIndex: 100,
-                                width: "240px",
-                                textAlign: "center",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                                marginBottom: "8px"
-                              }}>
-                                Please register your organization before requesting food.
-                              </div>
+                              GPS:{" "}
+                              {
+                                selectedItem.gpsLocation
+                              }
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="details-section">
+                        <h3>
+                          Description
+                        </h3>
+
+                        <p
+                          style={{
+                            margin: 0,
+                            color:
+                              COLORS.muted,
+                            fontSize:
+                              "11px",
+                            lineHeight: 1.65,
+                          }}
+                        >
+                          {selectedItem.description ||
+                            "No description provided."}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* RIGHT */}
+                    <div className="details-right">
+                      {isSignedIn ? (
+                        <>
+                          <div className="chat-card">
+                            <h3>
+                              💬 Connect with donor
+                            </h3>
+
+                            <p className="chat-subtitle">
+                              Ask about packaging,
+                              dietary information,
+                              logistics or pickup.
+                            </p>
+
+                            <div className="chat-messages">
+                              {activeMessages.length ===
+                              0 ? (
+                                <div
+                                  style={{
+                                    padding:
+                                      "30px 10px",
+                                    textAlign:
+                                      "center",
+                                    color:
+                                      COLORS.muted,
+                                    fontSize:
+                                      "10px",
+                                  }}
+                                >
+                                  No messages yet.
+                                  <br />
+                                  Start the
+                                  conversation.
+                                </div>
+                              ) : (
+                                activeMessages.map(
+                                  (m) => (
+                                    <div
+                                      key={m.id}
+                                      className={`message-row ${
+                                        m.senderId ===
+                                        "receiver"
+                                          ? "me"
+                                          : ""
+                                      }`}
+                                    >
+                                      <span className="message-name">
+                                        {
+                                          m.senderName
+                                        }
+                                      </span>
+
+                                      <div className="message-bubble">
+                                        {m.text}
+                                      </div>
+                                    </div>
+                                  )
+                                )
+                              )}
+                            </div>
+
+                            <form
+                              className="chat-form"
+                              onSubmit={
+                                handleSendQuestion
+                              }
+                            >
+                              <input
+                                type="text"
+                                value={
+                                  questionText
+                                }
+                                onChange={(e) =>
+                                  setQuestionText(
+                                    e.target
+                                      .value
+                                  )
+                                }
+                                placeholder="Ask the donor something..."
+                                required
+                              />
+
+                              <button
+                                type="submit"
+                                className="send-button"
+                              >
+                                Send
+                              </button>
+                            </form>
+                          </div>
+
+                          <div className="request-box">
+                            {selectedItem.status ===
+                            "Matching Pending" ? (
+                              <>
+                                <p>
+                                  ⏳ Your request is
+                                  already pending
+                                  donor approval.
+                                </p>
+
+                                <button
+                                  className="request-button"
+                                  disabled
+                                >
+                                  Request Pending
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <p>
+                                  Ready to rescue
+                                  this surplus?
+                                  Confirm how many
+                                  people you expect
+                                  to serve.
+                                </p>
+
+                                <button
+                                  className="request-button"
+                                  onClick={() => {
+                                    if (
+                                      isOrgRegistered
+                                    ) {
+                                      setIsRequestOpen(
+                                        true
+                                      );
+                                    } else {
+                                      setIsRegisterModalOpen(
+                                        true
+                                      );
+                                    }
+                                  }}
+                                >
+                                  {isOrgRegistered
+                                    ? "Request This Food →"
+                                    : "Register to Request →"}
+                                </button>
+                              </>
                             )}
                           </div>
                         </>
+                      ) : (
+                        <div className="auth-box">
+                          <div className="auth-icon">
+                            🔐
+                          </div>
+
+                          <h3
+                            style={{
+                              margin: 0,
+                              color:
+                                COLORS.navy,
+                              fontSize:
+                                "17px",
+                              fontWeight:
+                                950,
+                            }}
+                          >
+                            Sign in to continue
+                          </h3>
+
+                          <p
+                            style={{
+                              color:
+                                COLORS.muted,
+                              fontSize:
+                                "11px",
+                              lineHeight:
+                                1.6,
+                              margin:
+                                "8px 0 18px",
+                            }}
+                          >
+                            Sign in to chat with
+                            donors and request
+                            available food.
+                          </p>
+
+                          <button
+                            className="request-button"
+                            onClick={
+                              handleAuthRedirect
+                            }
+                          >
+                            Sign In →
+                          </button>
+                        </div>
                       )}
                     </div>
-                  </>
-                ) : (
-                  <div className="confirm-action-box" style={{ margin: "auto", background: "rgba(255, 138, 0, 0.05)", border: "1px dashed var(--primary)", padding: "32px 24px" }}>
-                    <span style={{ fontSize: "2rem" }}>🔒</span>
-                    <h3>Authentication Required</h3>
-                    <p style={{ fontSize: "0.95rem", color: "var(--text-secondary)", margin: "10px 0 20px" }}>
-                      Please sign in to contact the donor, ask questions, or request this food donation.
-                    </p>
-                    <button className="primary-button" onClick={handleAuthRedirect}>
-                      Sign In to Request
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =================================================
+              ORGANIZATION REGISTRATION
+          ================================================= */}
+          {isRegisterModalOpen && (
+            <div
+              className="modal-backdrop"
+              style={{ zIndex: 3000 }}
+              onClick={() =>
+                setIsRegisterModalOpen(false)
+              }
+            >
+              <div
+                className="modal"
+                style={{
+                  width: "min(760px,100%)",
+                }}
+                onClick={(e) =>
+                  e.stopPropagation()
+                }
+              >
+                <div className="modal-header">
+                  <div>
+                    <h2>
+                      Register your organization
+                    </h2>
+
+                    <div
+                      style={{
+                        marginTop:
+                          "4px",
+                        color:
+                          COLORS.muted,
+                        fontSize:
+                          "10px",
+                      }}
+                    >
+                      Create a trusted receiver
+                      profile on MealBridge.
+                    </div>
+                  </div>
+
+                  <button
+                    className="close-button"
+                    onClick={() =>
+                      setIsRegisterModalOpen(
+                        false
+                      )
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="modal-content">
+                  <form
+                    className="form"
+                    onSubmit={
+                      handleRegisterSubmit
+                    }
+                  >
+                    <div className="form-grid">
+
+                      <div className="field full">
+                        <label>
+                          Organization Name
+                        </label>
+
+                        <input
+                          type="text"
+                          value={orgName}
+                          onChange={(e) =>
+                            setOrgName(
+                              e.target.value
+                            )
+                          }
+                          placeholder="Green Hope Foundation"
+                          required
+                        />
+                      </div>
+
+                      <div className="field">
+                        <label>
+                          Organization Type
+                        </label>
+
+                        <select
+                          value={orgType}
+                          onChange={(e) =>
+                            setOrgType(
+                              e.target.value
+                            )
+                          }
+                        >
+                          <option value="NGO">
+                            NGO
+                          </option>
+
+                          <option value="Shelter">
+                            Shelter
+                          </option>
+
+                          <option value="Orphanage">
+                            Orphanage
+                          </option>
+
+                          <option value="Community Kitchen">
+                            Community Kitchen
+                          </option>
+
+                          <option value="Other">
+                            Other
+                          </option>
+                        </select>
+                      </div>
+
+                      <div className="field">
+                        <label>
+                          Registration Number
+                          (optional)
+                        </label>
+
+                        <input
+                          type="text"
+                          value={regNum}
+                          onChange={(e) =>
+                            setRegNum(
+                              e.target.value
+                            )
+                          }
+                          placeholder="REG-8271"
+                        />
+                      </div>
+
+                      <div className="field">
+                        <label>
+                          Contact Person
+                        </label>
+
+                        <input
+                          type="text"
+                          value={contactName}
+                          onChange={(e) =>
+                            setContactName(
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="field">
+                        <label>
+                          Phone Number
+                        </label>
+
+                        <input
+                          type="text"
+                          value={phone}
+                          onChange={(e) =>
+                            setPhone(
+                              e.target.value
+                            )
+                          }
+                          placeholder="+91 XXXXX XXXXX"
+                          required
+                        />
+                      </div>
+
+                      <div className="field full">
+                        <label>
+                          Contact Email
+                        </label>
+
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) =>
+                            setEmail(
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="field full">
+                        <label>
+                          Street Address
+                        </label>
+
+                        <textarea
+                          rows="2"
+                          value={address}
+                          onChange={(e) =>
+                            setAddress(
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="field">
+                        <label>
+                          City
+                        </label>
+
+                        <input
+                          type="text"
+                          value={city}
+                          onChange={(e) =>
+                            setCity(
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="field">
+                        <label>
+                          State
+                        </label>
+
+                        <input
+                          type="text"
+                          value={stateName}
+                          onChange={(e) =>
+                            setStateName(
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="field">
+                        <label>
+                          PIN Code
+                        </label>
+
+                        <input
+                          type="text"
+                          value={pinCode}
+                          onChange={(e) =>
+                            setPinCode(
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="field">
+                        <label>
+                          People Served Daily
+                        </label>
+
+                        <input
+                          type="number"
+                          min="1"
+                          value={dailyServed}
+                          onChange={(e) =>
+                            setDailyServed(
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="field full">
+                        <label>
+                          About your organization
+                        </label>
+
+                        <textarea
+                          rows="3"
+                          value={description}
+                          onChange={(e) =>
+                            setDescription(
+                              e.target.value
+                            )
+                          }
+                          placeholder="Tell donors about the communities you serve..."
+                          required
+                        />
+                      </div>
+
+                      <div className="field full">
+                        <label>
+                          Verification Document
+                          (optional)
+                        </label>
+
+                        <input
+                          type="file"
+                          style={{
+                            padding:
+                              "8px",
+                          }}
+                        />
+                      </div>
+
+                    </div>
+
+                    <div className="modal-actions">
+                      <button
+                        type="button"
+                        className="cancel-button"
+                        onClick={() =>
+                          setIsRegisterModalOpen(
+                            false
+                          )
+                        }
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="submit"
+                        className="confirm-button"
+                      >
+                        Create Receiver
+                        Profile →
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =================================================
+              REQUEST CONFIRMATION
+          ================================================= */}
+          {isRequestOpen &&
+            selectedItem && (
+              <div
+                className="modal-backdrop"
+                style={{ zIndex: 3500 }}
+                onClick={() =>
+                  setIsRequestOpen(false)
+                }
+              >
+                <div
+                  className="modal modal-small"
+                  onClick={(e) =>
+                    e.stopPropagation()
+                  }
+                >
+                  <div className="modal-header">
+                    <div>
+                      <h2>
+                        Confirm food request
+                      </h2>
+
+                      <div
+                        style={{
+                          marginTop:
+                            "4px",
+                          color:
+                            COLORS.muted,
+                          fontSize:
+                            "10px",
+                        }}
+                      >
+                        {selectedItem.name}
+                      </div>
+                    </div>
+
+                    <button
+                      className="close-button"
+                      onClick={() =>
+                        setIsRequestOpen(false)
+                      }
+                    >
+                      ×
                     </button>
                   </div>
-                )}
+
+                  <form
+                    className="form"
+                    onSubmit={
+                      handleConfirmRequest
+                    }
+                  >
+                    <div
+                      style={{
+                        padding:
+                          "14px",
+                        borderRadius:
+                          "14px",
+                        background:
+                          COLORS.softGreen,
+                        marginBottom:
+                          "17px",
+                        color:
+                          COLORS.navy,
+                        fontSize:
+                          "11px",
+                        lineHeight:
+                          1.5,
+                      }}
+                    >
+                      🍱 This donation has{" "}
+                      <strong>
+                        {selectedItem.quantity}
+                      </strong>{" "}
+                      servings available.
+                    </div>
+
+                    <div className="field">
+                      <label>
+                        PEOPLE YOU EXPECT TO
+                        SERVE
+                      </label>
+
+                      <input
+                        type="number"
+                        min="1"
+                        max={
+                          selectedItem.quantity
+                        }
+                        value={
+                          expectedPeople
+                        }
+                        onChange={(e) =>
+                          setExpectedPeople(
+                            e.target.value
+                          )
+                        }
+                        required
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>
+                        MESSAGE TO DONOR
+                      </label>
+
+                      <textarea
+                        rows="3"
+                        value={
+                          donorMessage
+                        }
+                        onChange={(e) =>
+                          setDonorMessage(
+                            e.target.value
+                          )
+                        }
+                        placeholder="We have transport ready for immediate pickup..."
+                      />
+                    </div>
+
+                    <div className="modal-actions">
+                      <button
+                        type="button"
+                        className="cancel-button"
+                        onClick={() =>
+                          setIsRequestOpen(
+                            false
+                          )
+                        }
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="submit"
+                        className="confirm-button"
+                      >
+                        Send Request →
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
         </div>
-      )}
-
-      {/* ORGANIZATION REGISTRATION MODAL */}
-      {isRegisterModalOpen && (
-        <div className="modal-backdrop-custom" style={{ zIndex: 1500 }}>
-          <div className="modal-card-custom">
-            <div className="modal-header-custom">
-              <h2>Register Your Organization</h2>
-              <button className="close-btn" onClick={() => setIsRegisterModalOpen(false)}>×</button>
-            </div>
-            <form onSubmit={handleRegisterSubmit} className="modal-form-scrollable">
-              <label className="field-label">
-                Organization Name
-                <input type="text" value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="E.g., Green Hope Shelter" required />
-              </label>
-
-              <div className="form-row-custom">
-                <label className="field-label half">
-                  Organization Type
-                  <select value={orgType} onChange={(e) => setOrgType(e.target.value)}>
-                    <option value="NGO">NGO</option>
-                    <option value="Shelter">Shelter</option>
-                    <option value="Orphanage">Orphanage</option>
-                    <option value="Community Kitchen">Community Kitchen</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </label>
-                <label className="field-label half">
-                  Registration Number (optional)
-                  <input type="text" value={regNum} onChange={(e) => setRegNum(e.target.value)} placeholder="E.g., REG-8271" />
-                </label>
-              </div>
-
-              <div className="form-row-custom">
-                <label className="field-label half">
-                  Contact Person Name
-                  <input type="text" value={contactName} onChange={(e) => setContactName(e.target.value)} required />
-                </label>
-                <label className="field-label half">
-                  Phone Number
-                  <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="E.g., 555-0199" required />
-                </label>
-              </div>
-
-              <label className="field-label">
-                Contact Email Address
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </label>
-
-              <label className="field-label">
-                Street Address
-                <textarea rows="2" value={address} onChange={(e) => setAddress(e.target.value)} required />
-              </label>
-
-              <div className="form-row-custom">
-                <label className="field-label half">
-                  City
-                  <input type="text" value={city} onChange={(e) => setCity(e.target.value)} required />
-                </label>
-                <label className="field-label half">
-                  State
-                  <input type="text" value={stateName} onChange={(e) => setStateName(e.target.value)} required />
-                </label>
-              </div>
-
-              <div className="form-row-custom">
-                <label className="field-label half">
-                  PIN Code
-                  <input type="text" value={pinCode} onChange={(e) => setPinCode(e.target.value)} required />
-                </label>
-                <label className="field-label half">
-                  People Served Daily
-                  <input type="number" value={dailyServed} onChange={(e) => setDailyServed(e.target.value)} required />
-                </label>
-              </div>
-
-              <label className="field-label">
-                Brief Description of Activities
-                <textarea rows="3" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your primary services and communities served..." required />
-              </label>
-
-              <label className="field-label">
-                Upload Organization Verification Document (optional)
-                <input type="file" style={{ border: "none", padding: "0" }} />
-              </label>
-
-              <div className="modal-actions-custom">
-                <button type="button" className="btn-cancel" onClick={() => setIsRegisterModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn-confirm-action">Register Organization</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* CONFIRM REQUEST POPUP */}
-      {isRequestOpen && currentItem && (
-        <div className="modal-backdrop-custom" style={{ zIndex: 1500 }}>
-          <div className="modal-card-custom small-modal">
-            <div className="modal-header-custom">
-              <h2>Confirm Request</h2>
-              <button className="close-btn" onClick={() => setIsRequestOpen(false)}>×</button>
-            </div>
-            <form onSubmit={handleConfirmRequest} className="modal-body-content" style={{ padding: "24px" }}>
-              <p>Verify portion expectation before requesting this surplus food:</p>
-              
-              <label className="field-label" style={{ marginTop: "16px" }}>
-                How many people are you expecting to serve with this food?
-                <input 
-                  type="number" 
-                  min="1" 
-                  max={currentItem.quantity}
-                  value={expectedPeople} 
-                  onChange={(e) => setExpectedPeople(e.target.value)} 
-                  required 
-                />
-              </label>
-
-              <label className="field-label" style={{ marginTop: "12px" }}>
-                Optional Message to Donor
-                <textarea 
-                  rows="2" 
-                  value={donorMessage} 
-                  onChange={(e) => setDonorMessage(e.target.value)} 
-                  placeholder="E.g., We have a transport ready for immediate pickup."
-                />
-              </label>
-
-              <div className="modal-actions-custom" style={{ marginTop: "24px" }}>
-                <button type="button" className="btn-cancel" onClick={() => setIsRequestOpen(false)}>Cancel</button>
-                <button type="submit" className="btn-confirm-action">Confirm Request</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 
+  /* =========================================================
+     LAYOUT
+  ========================================================= */
+
   return isSignedIn ? (
-    <DashboardLayout>{content}</DashboardLayout>
+    <DashboardLayout>
+      {content}
+    </DashboardLayout>
   ) : (
     <>
       <Navbar />
-      <main className="public-receiver-page" style={{ maxWidth: "1200px", margin: "40px auto", padding: "0 24px" }}>
+
+      <main
+        style={{
+          width: "100%",
+          margin: 0,
+        }}
+      >
         {content}
       </main>
     </>
