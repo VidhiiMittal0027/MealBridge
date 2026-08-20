@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import "./About.css";
 
 const stats = [
@@ -701,8 +700,6 @@ export default function About() {
         </section>
 
       </main>
-
-      <Footer />
     </>
   );
 }

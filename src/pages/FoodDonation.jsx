@@ -25,36 +25,61 @@ export default function FoodDonation() {
       setMessage("❌ Authentication required to list food.");
       return;
     }
+    
+    if (!imageFile) {
+      setMessage("❌ Please upload a food image for AI Assessment.");
+      return;
+    }
 
     setLoading(true);
-    setMessage("");
+    setMessage("Running AI Assessment...");
 
     let imageUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=60";
+    let aiResult = null;
 
     try {
-      // 1. Upload image if selected
-      if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
+      // 1. Run AI Assessment
+      const formData = new FormData();
+      formData.append("file", imageFile);
 
-        const { error: uploadError } = await supabase.storage
+      const aiResponse = await fetch("http://127.0.0.1:8000/predict-freshness", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!aiResponse.ok) {
+        throw new Error("AI assessment failed. Please try again.");
+      }
+
+      aiResult = await aiResponse.json();
+      
+      if (aiResult.error) {
+        throw new Error(aiResult.error);
+      }
+      
+      setMessage("Saving image and listing...");
+
+      // 2. Upload image to Supabase
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("food-images")
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError.message);
+      } else {
+        const { data: publicData } = supabase.storage
           .from("food-images")
-          .upload(filePath, imageFile);
-
-        if (uploadError) {
-          console.error("Upload error:", uploadError.message);
-        } else {
-          const { data: publicData } = supabase.storage
-            .from("food-images")
-            .getPublicUrl(filePath);
-          if (publicData) {
-            imageUrl = publicData.publicUrl;
-          }
+          .getPublicUrl(filePath);
+        if (publicData) {
+          imageUrl = publicData.publicUrl;
         }
       }
 
-      // 2. Insert food listing to PostgreSQL
+      // 3. Insert food listing to PostgreSQL with AI scores
       const { error } = await supabase
         .from("food_donations")
         .insert({
@@ -66,25 +91,25 @@ export default function FoodDonation() {
           pickup_address: pickupAddress,
           veg_non_veg: "Veg",
           image_url: imageUrl,
-          status: 'available'
+          status: 'available',
+          freshness_score: aiResult.freshness_score,
+          freshness_label: aiResult.freshness_label,
+          ai_model_version: aiResult.model_version
         });
 
-      setLoading(false);
-
       if (error) {
-        console.error(error);
-        setMessage("❌ " + error.message);
-        return;
+        throw new Error(error.message);
       }
 
-      setMessage("✅ Donation saved successfully!");
+      setMessage("✅ Assessment & Donation saved successfully!");
 
+      // Pass the AI result to the assessment page
       setTimeout(() => {
-        navigate("/food-assessment");
-      }, 1000);
+        navigate("/donor-dashboard");
+      }, 1500);
     } catch (err) {
       setLoading(false);
-      setMessage("❌ Connection error: " + err.message);
+      setMessage("❌ Error: " + err.message);
     }
   }
 
@@ -137,11 +162,12 @@ export default function FoodDonation() {
           </label>
 
           <label className="field">
-            Food image
+            Food image (Required for AI Safety Check)
             <input 
               type="file" 
               accept="image/*" 
               onChange={(e) => setImageFile(e.target.files[0])}
+              required
             />
           </label>
 
@@ -150,10 +176,10 @@ export default function FoodDonation() {
             className="btn wide"
             disabled={loading}
           >
-            {loading ? "Saving..." : "Run AI Assessment →"}
+            {loading ? "Running AI Check..." : "Run AI Assessment →"}
           </button>
 
-          {message && <p>{message}</p>}
+          {message && <p style={{ marginTop: "10px", fontWeight: "bold" }}>{message}</p>}
         </form>
       </main>
 

@@ -258,10 +258,8 @@ export default function Navbar() {
        ===================================================== */
 
     .mb-navbar {
-      position: fixed;
-      top: 18px;
-      left: 50%;
-      transform: translateX(-50%);
+      position: relative;
+      margin: 18px auto 0 auto;
 
       width: min(1180px, calc(100% - 36px));
       height: 72px;

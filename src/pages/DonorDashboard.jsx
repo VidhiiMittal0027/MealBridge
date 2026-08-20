@@ -399,6 +399,10 @@ export default function DonorDashboard() {
   const [description, setDescription] = useState(""); 
   const [specialInstructions, setSpecialInstructions] = 
     useState(""); 
+  const [imageFile, setImageFile] = useState(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+
  
   const [prepTime, setPrepTime] = useState("30 Minutes"); 
   const [customPrepTime, setCustomPrepTime] = useState("");
@@ -753,36 +757,114 @@ export default function DonorDashboard() {
     setNeedTransportation("No"); 
     setDescription(""); 
     setSpecialInstructions(""); 
+    setImageFile(null);
+    setAiResult(null);
+    setIsAiLoading(false);
   }; 
  
-  const handleRegisterSubmit = (e) => { 
+  const handleRegisterSubmit = async (e) => { 
     e.preventDefault(); 
- 
-    registerFood({ 
-      name: foodName, 
-      category, 
-      vegNonVeg, 
-      quantity: Number(quantity), 
-      cookingTime, 
-      expiryTime, 
-      imageUrl: HERO_IMAGE, 
-      pickupAddress, 
-      gpsLocation, 
-      needTransportation, 
-      description, 
-      specialInstructions, 
-      donorName: 
-        user?.fullName || "Fresh Bites Catering", 
-    }); 
- 
-    resetForm(); 
-    setIsRegisterOpen(false); 
- 
-    showToast( 
-      "Food donation registered successfully.", 
-      "success" 
-    ); 
+
+    if (aiResult) {
+      // If AI result is already present, this is the second click: Confirm & Register
+      await handleConfirmRegister();
+      return;
+    }
+
+    if (!imageFile) {
+      showToast("Please upload an image for AI assessment.", "error");
+      return;
+    }
+
+    setIsAiLoading(true);
+
+    try {
+      // 1. Run AI Assessment
+      const formData = new FormData();
+      formData.append("file", imageFile);
+
+      const aiResponse = await fetch("http://127.0.0.1:8000/predict-freshness", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!aiResponse.ok) {
+        throw new Error("AI assessment failed.");
+      }
+
+      const aiData = await aiResponse.json();
+      
+      if (aiData.error) {
+        throw new Error(aiData.error);
+      }
+      
+      setAiResult(aiData);
+      setIsAiLoading(false);
+      showToast("AI Assessment complete! Please review and confirm.", "success");
+    } catch (err) {
+      setIsAiLoading(false);
+      showToast(err.message, "error");
+    }
   }; 
+
+  const handleConfirmRegister = async () => {
+    setIsAiLoading(true);
+    let finalImageUrl = HERO_IMAGE;
+
+    try {
+      // 2. Upload Image to Supabase
+      const { supabase } = await import('../supabase.js');
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("food-images")
+        .upload(filePath, imageFile);
+
+      if (!uploadError) {
+        const { data: publicData } = supabase.storage
+          .from("food-images")
+          .getPublicUrl(filePath);
+        if (publicData) {
+          finalImageUrl = publicData.publicUrl;
+        }
+      }
+
+      // 3. Register Food
+      await registerFood({ 
+        name: foodName, 
+        category, 
+        vegNonVeg, 
+        quantity: Number(quantity), 
+        cookingTime, 
+        expiryTime, 
+        imageUrl: finalImageUrl, 
+        pickupAddress, 
+        gpsLocation, 
+        needTransportation, 
+        description, 
+        specialInstructions, 
+        donorName: 
+          user?.fullName || "Fresh Bites Catering",
+        freshnessLabel: aiResult.freshness_label,
+        freshnessScore: aiResult.freshness_score,
+        aiModelVersion: aiResult.model_version
+      }); 
+ 
+      setIsAiLoading(false);
+      resetForm(); 
+      setIsRegisterOpen(false); 
+      
+      showToast( 
+        "Food donation registered successfully.", 
+        "success" 
+      ); 
+    } catch (err) {
+      setIsAiLoading(false);
+      showToast("Registration failed: " + err.message, "error");
+    }
+  };
  
   const handleEditSubmit = (e) => { 
     e.preventDefault(); 
@@ -3314,19 +3396,17 @@ export default function DonorDashboard() {
                 </label> 
  
                 <label style={fieldStyle}> 
-                  Need Transportation? 
-                  <select 
-                    value={needTransportation} 
+                  Food Image (Required for AI Safety Check)
+                  <input 
+                    type="file" 
+                    accept="image/*"
                     onChange={(e) => 
-                      setNeedTransportation( 
-                        e.target.value 
-                      ) 
+                      setImageFile(e.target.files[0]) 
                     } 
                     style={inputStyle} 
-                  > 
-                    <option>No</option> 
-                    <option>Yes</option> 
-                  </select> 
+                    required={!isEditOpen}
+                    disabled={isEditOpen}
+                  /> 
                 </label> 
               </div> 
  
@@ -3403,6 +3483,7 @@ export default function DonorDashboard() {
                   }} 
                 /> 
               </label> 
+
  
               <label style={fieldStyle}> 
                 Special Instructions 
@@ -3425,30 +3506,82 @@ export default function DonorDashboard() {
               <div 
                 style={{ 
                   display: "flex", 
-                  justifyContent: "flex-end", 
-                  gap: 8, 
+                  justifyContent: "space-between", 
+                  alignItems: "flex-end",
                   marginTop: 20, 
                 }} 
               > 
-                <button 
-                  type="button" 
-                  onClick={() => { 
-                    setIsRegisterOpen(false); 
-                    setIsEditOpen(false); 
-                  }} 
-                  style={secondaryButton} 
-                > 
-                  Cancel 
-                </button> 
- 
-                <button 
-                  type="submit" 
-                  style={primaryButton} 
-                > 
-                  {isEditOpen 
-                    ? "Save Changes" 
-                    : "Register Food"} 
-                </button> 
+                <div style={{ flex: 1, paddingRight: 16 }}>
+                  {aiResult && (() => {
+                    const FOOD_INDICATORS = {
+                      "biryani": { fresh: "Normal color, moist grains, normal aroma/appearance, no discoloration", spoilage: "Drying, unusual discoloration, mold, slimy appearance", storage: "Keep hot or refrigerate promptly" },
+                      "rice": { fresh: "Separate/normal grains, normal color and texture", spoilage: "Dry/hard or unusually sticky texture, discoloration, mold", storage: "Hot holding or prompt refrigeration" },
+                      "dal": { fresh: "Normal color, smooth/expected consistency", spoilage: "Unusual separation, discoloration, surface growth, abnormal texture", storage: "Hot holding or refrigeration" },
+                      "curry": { fresh: "Normal color, expected consistency, no surface growth", spoilage: "Film, mold, unusual discoloration, abnormal separation/texture", storage: "Hot holding or refrigeration" },
+                      "roti": { fresh: "Normal color, soft/expected texture, no visible mold", spoilage: "Excessive dryness, discoloration, mold", storage: "Covered/appropriate storage; refrigeration if holding longer" },
+                      "naan": { fresh: "Normal color, soft/expected texture, no visible mold", spoilage: "Excessive dryness, discoloration, mold", storage: "Covered/appropriate storage; refrigeration if holding longer" },
+                      "chapati": { fresh: "Normal color, soft/expected texture, no visible mold", spoilage: "Excessive dryness, discoloration, mold", storage: "Covered/appropriate storage; refrigeration if holding longer" },
+                      "pizza": { fresh: "Normal toppings, intact appearance, no mold/slime", spoilage: "Mold, abnormal discoloration, degraded toppings", storage: "Refrigeration for longer holding" },
+                      "pasta": { fresh: "Normal color/texture, no visible spoilage", spoilage: "Excessive drying, discoloration, mold, abnormal texture", storage: "Hot holding or refrigeration" },
+                      "noodles": { fresh: "Normal color/texture, no visible spoilage", spoilage: "Excessive drying, discoloration, mold, abnormal texture", storage: "Hot holding or refrigeration" },
+                      "sandwich": { fresh: "Fresh bread, normal fillings, no mold", spoilage: "Mold on bread, soggy, off-smell", storage: "Refrigeration" },
+                      "fried foods": { fresh: "Normal color, intact coating, no visible spoilage", spoilage: "Excessive sogginess/degradation, discoloration, mold", storage: "Appropriate hot holding or prompt refrigeration" }
+                    };
+                    const details = FOOD_INDICATORS[aiResult.food_type?.toLowerCase()] || null;
+                    return (
+                    <div style={{
+                      padding: 12,
+                      background: "#EAF9F4",
+                      border: "1px solid #10B981",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      color: "#067A62"
+                    }}>
+                      <strong>🤖 AI Assessment Results:</strong><br/>
+                      Identified as: <b style={{ textTransform: "capitalize" }}>{aiResult.food_type}</b><br/>
+                      Freshness: <b style={{ textTransform: "capitalize" }}>{aiResult.freshness_score}% ({aiResult.freshness_label === 'fresh' ? 'Fresh-looking' : aiResult.freshness_label === 'moderate' ? 'Questionable' : 'Visible spoilage'})</b>
+                      
+                      {details && (
+                        <div style={{ marginTop: 8, borderTop: "1px solid #A7F3D0", paddingTop: 8 }}>
+                          <strong style={{ color: "#047857" }}>🍽️ Quality Indicators for this Food:</strong>
+                          <ul style={{ paddingLeft: 16, margin: "4px 0 0 0" }}>
+                            <li><b>Fresh:</b> {details.fresh}</li>
+                            <li><b>Spoilage:</b> {details.spoilage}</li>
+                            <li><b>Storage:</b> {details.storage}</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )})()}
+                </div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button 
+                    type="button" 
+                    onClick={() => { 
+                      setIsRegisterOpen(false); 
+                      setIsEditOpen(false); 
+                    }} 
+                    style={secondaryButton} 
+                    disabled={isAiLoading}
+                  > 
+                    Cancel 
+                  </button> 
+   
+                  <button 
+                    type="submit" 
+                    style={primaryButton} 
+                    disabled={isAiLoading}
+                  > 
+                    {isAiLoading 
+                      ? "Processing..." 
+                      : isEditOpen 
+                      ? "Save Changes" 
+                      : aiResult 
+                      ? "Confirm & Register Food"
+                      : "Run AI Assessment"} 
+                  </button> 
+                </div>
               </div> 
             </form> 
           </ModalShell> 
