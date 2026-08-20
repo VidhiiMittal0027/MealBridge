@@ -3,7 +3,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-CATEGORIES = ['biryani', 'rice', 'dal', 'curry', 'roti', 'pizza', 'pasta', 'sandwich', 'fried', 'unknown']
+CATEGORIES = ['tomato', 'banana', 'biryani', 'roti']
 FRESHNESS = ['fresh', 'moderate', 'spoiled']
 
 # Mappings for categorical to integer

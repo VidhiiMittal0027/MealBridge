@@ -1745,7 +1745,7 @@ export default function ReceiverPage() {
           <div className="freshness-box">
             <div className="freshness-top">
               <span className="freshness-label">
-                ✦ AI FRESHNESS CHECK
+                ✦ AI-ESTIMATED FRESHNESS
               </span>
 
               <span className="freshness-value">
@@ -2390,31 +2390,40 @@ export default function ReceiverPage() {
                         </div>
                       )}
 
-                      <div className="ai-verification">
-                        <div className="ai-title">
-                          <span>
-                            ✦ AI FOOD
-                            VERIFICATION
-                          </span>
-
-                          <span>
-                            VERIFIED
+                      <div className="ai-verification" style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: 16, marginTop: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: 13, marginBottom: 8 }}>
+                          <span style={{ color: "#374151" }}>✦ AI Freshness Assessment</span>
+                          <span style={{
+                            color: selectedItem.freshnessLabel === 'spoiled' ? '#DC2626' : selectedItem.freshnessLabel === 'moderate' ? '#D97706' : '#059669',
+                            textTransform: "uppercase"
+                          }}>
+                            {selectedItem.freshnessLabel === 'spoiled' ? 'Potential Spoilage' : selectedItem.freshnessLabel === 'moderate' ? 'Questionable' : '🟢 Fresh-looking'}
                           </span>
                         </div>
 
-                        <div className="ai-score">
+                        <div style={{ fontSize: 18, color: "#1F2937", marginBottom: 8 }}>
                           <strong>
                             {Number(
                               selectedItem.freshnessScore ||
                                 selectedItem.aiFreshnessScore ||
                                 91
-                            )}
-                            %
-                          </strong>
-
-                          <span>
-                            freshness confidence
+                            )}%
+                          </strong>{" "}
+                          <span style={{ fontSize: 12, color: "#6B7280" }}>
+                            confidence (Analyzed recently)
                           </span>
+                        </div>
+
+                        <div style={{
+                          padding: 8,
+                          background: "#FEF2F2",
+                          border: "1px solid #FEE2E2",
+                          borderRadius: 8,
+                          color: "#991B1B",
+                          fontSize: 11,
+                          lineHeight: "1.4"
+                        }}>
+                          <strong>⚠️ SAFETY DISCLAIMER:</strong> AI assessment does not certify food safety. Actual food safety depends on storage temperature, preparation time, handling, hygiene, contamination, packaging, expiry information, and storage conditions.
                         </div>
                       </div>
 

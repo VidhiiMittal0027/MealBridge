@@ -3297,294 +3297,357 @@ export default function DonorDashboard() {
                 padding: 22, 
               }} 
             > 
-              <div 
-                style={{ 
-                  padding: 14, 
-                  marginBottom: 16, 
-                  borderRadius: 14, 
-                  background: 
-                    "linear-gradient(135deg,#F0FBF8,#F8FCFB)", 
-                  border: "1px solid #DCEFEA", 
-                }} 
-              > 
-                <div 
-                  style={{ 
-                    color: COLORS.greenDark, 
-                    fontSize: 9, 
-                    fontWeight: 900, 
-                    textTransform: "uppercase", 
-                    letterSpacing: ".1em", 
-                  }} 
-                > 
-                  Donation information 
-                </div> 
- 
-                <p 
-                  style={{ 
-                    margin: "5px 0 0", 
-                    color: COLORS.muted, 
-                    fontSize: 10, 
-                    lineHeight: 1.5, 
-                  }} 
-                > 
-                  Add accurate food and pickup 
-                  details so community partners 
-                  can respond quickly. 
-                </p> 
-              </div> 
- 
-              <label style={fieldStyle}> 
-                Food Name 
-                <input 
-                  type="text" 
-                  value={foodName} 
-                  onChange={(e) => 
-                    setFoodName(e.target.value) 
-                  } 
-                  placeholder="e.g. Fresh Vegetable Biryani" 
-                  required 
-                  style={inputStyle} 
-                /> 
-              </label> 
- 
-              <div style={twoColumnGrid}> 
-                <label style={fieldStyle}> 
-                  Category 
-                  <select 
-                    value={category} 
-                    onChange={(e) => 
-                      setCategory(e.target.value) 
-                    } 
-                    style={inputStyle} 
+              {!aiResult ? (
+                <>
+                  <div 
+                    style={{ 
+                      padding: 14, 
+                      marginBottom: 16, 
+                      borderRadius: 14, 
+                      background: 
+                        "linear-gradient(135deg,#F0FBF8,#F8FCFB)", 
+                      border: "1px solid #DCEFEA", 
+                    }} 
                   > 
-                    <option>Cooked Meals</option> 
-                    <option>Salads</option> 
-                    <option>Bakery</option> 
-                    <option>Dairy</option> 
-                    <option>Beverages</option> 
-                  </select> 
-                </label> 
- 
-                <label style={fieldStyle}> 
-                  Veg / Non-Veg 
-                  <select 
-                    value={vegNonVeg} 
-                    onChange={(e) => 
-                      setVegNonVeg(e.target.value) 
-                    } 
-                    style={inputStyle} 
-                  > 
-                    <option>Veg</option> 
-                    <option>Non Veg</option> 
-                  </select> 
-                </label> 
-              </div> 
- 
-              <div style={twoColumnGrid}> 
-                <label style={fieldStyle}> 
-                  Quantity 
-                  <input 
-                    type="number" 
-                    min="1" 
-                    value={quantity} 
-                    onChange={(e) => 
-                      setQuantity(e.target.value) 
-                    } 
-                    required 
-                    style={inputStyle} 
-                  /> 
-                </label> 
- 
-                <label style={fieldStyle}> 
-                  Food Image (Required for AI Safety Check)
-                  <input 
-                    type="file" 
-                    accept="image/*"
-                    onChange={(e) => 
-                      setImageFile(e.target.files[0]) 
-                    } 
-                    style={inputStyle} 
-                    required={!isEditOpen}
-                    disabled={isEditOpen}
-                  /> 
-                </label> 
-              </div> 
- 
-              <div style={twoColumnGrid}> 
-                <label style={fieldStyle}> 
-                  Cooking Time 
-                  <input 
-                    type="datetime-local" 
-                    value={cookingTime} 
-                    onChange={(e) => 
-                      setCookingTime(e.target.value) 
-                    } 
-                    required 
-                    style={inputStyle} 
-                  /> 
-                </label> 
- 
-                <label style={fieldStyle}> 
-                  Expiry Time 
-                  <input 
-                    type="datetime-local" 
-                    value={expiryTime} 
-                    onChange={(e) => 
-                      setExpiryTime(e.target.value) 
-                    } 
-                    required 
-                    style={inputStyle} 
-                  /> 
-                </label> 
-              </div> 
- 
-              <label style={fieldStyle}> 
-                Pickup Address 
-                <textarea 
-                  rows="3" 
-                  value={pickupAddress} 
-                  onChange={(e) => 
-                    setPickupAddress(e.target.value) 
-                  } 
-                  placeholder="Enter complete pickup address" 
-                  required 
-                  style={{ 
-                    ...inputStyle, 
-                    resize: "vertical", 
-                  }} 
-                /> 
-              </label> 
- 
-              <label style={fieldStyle}> 
-                GPS Location 
-                <input 
-                  type="text" 
-                  value={gpsLocation} 
-                  onChange={(e) => 
-                    setGpsLocation(e.target.value) 
-                  } 
-                  required 
-                  style={inputStyle} 
-                /> 
-              </label> 
- 
-              <label style={fieldStyle}> 
-                Description 
-                <textarea 
-                  rows="3" 
-                  value={description} 
-                  onChange={(e) => 
-                    setDescription(e.target.value) 
-                  } 
-                  placeholder="Describe the food, ingredients or serving details..." 
-                  style={{ 
-                    ...inputStyle, 
-                    resize: "vertical", 
-                  }} 
-                /> 
-              </label> 
+                    <div 
+                      style={{ 
+                        color: COLORS.greenDark, 
+                        fontSize: 9, 
+                        fontWeight: 900, 
+                        textTransform: "uppercase", 
+                        letterSpacing: ".1em", 
+                      }} 
+                    > 
+                      Donation information 
+                    </div> 
+     
+                    <p 
+                      style={{ 
+                        margin: "5px 0 0", 
+                        color: COLORS.muted, 
+                        fontSize: 10, 
+                        lineHeight: 1.5, 
+                      }} 
+                    > 
+                      Add accurate food and pickup 
+                      details so community partners 
+                      can respond quickly. 
+                    </p> 
+                  </div> 
+     
+                  <label style={fieldStyle}> 
+                    Food Name 
+                    <input 
+                      type="text" 
+                      value={foodName} 
+                      onChange={(e) => 
+                        setFoodName(e.target.value) 
+                      } 
+                      placeholder="e.g. Fresh Vegetable Biryani" 
+                      required 
+                      style={inputStyle} 
+                    /> 
+                  </label> 
+     
+                  <div style={twoColumnGrid}> 
+                    <label style={fieldStyle}> 
+                      Category 
+                      <select 
+                        value={category} 
+                        onChange={(e) => 
+                          setCategory(e.target.value) 
+                        } 
+                        style={inputStyle} 
+                      > 
+                        <option>Cooked Meals</option> 
+                        <option>Salads</option> 
+                        <option>Bakery</option> 
+                        <option>Dairy</option> 
+                        <option>Beverages</option> 
+                      </select> 
+                    </label> 
+     
+                    <label style={fieldStyle}> 
+                      Veg / Non-Veg 
+                      <select 
+                        value={vegNonVeg} 
+                        onChange={(e) => 
+                          setVegNonVeg(e.target.value) 
+                        } 
+                        style={inputStyle} 
+                      > 
+                        <option>Veg</option> 
+                        <option>Non Veg</option> 
+                      </select> 
+                    </label> 
+                  </div> 
+     
+                  <div style={twoColumnGrid}> 
+                    <label style={fieldStyle}> 
+                      Quantity 
+                      <input 
+                        type="number" 
+                        min="1" 
+                        value={quantity} 
+                        onChange={(e) => 
+                          setQuantity(e.target.value) 
+                        } 
+                        required 
+                        style={inputStyle} 
+                      /> 
+                    </label> 
+     
+                    <label style={fieldStyle}> 
+                      Food Image (Required for AI Safety Check)
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => 
+                          setImageFile(e.target.files[0]) 
+                        } 
+                        style={inputStyle} 
+                        required={!isEditOpen}
+                        disabled={isEditOpen}
+                      /> 
+                    </label> 
+                  </div> 
+     
+                  <div style={twoColumnGrid}> 
+                    <label style={fieldStyle}> 
+                      Cooking Time 
+                      <input 
+                        type="datetime-local" 
+                        value={cookingTime} 
+                        onChange={(e) => 
+                          setCookingTime(e.target.value) 
+                        } 
+                        required 
+                        style={inputStyle} 
+                      /> 
+                    </label> 
+     
+                    <label style={fieldStyle}> 
+                      Expiry Time 
+                      <input 
+                        type="datetime-local" 
+                        value={expiryTime} 
+                        onChange={(e) => 
+                          setExpiryTime(e.target.value) 
+                        } 
+                        required 
+                        style={inputStyle} 
+                      /> 
+                    </label> 
+                  </div> 
+     
+                  <label style={fieldStyle}> 
+                    Pickup Address 
+                    <textarea 
+                      rows="3" 
+                      value={pickupAddress} 
+                      onChange={(e) => 
+                        setPickupAddress(e.target.value) 
+                      } 
+                      placeholder="Enter complete pickup address" 
+                      required 
+                      style={{ 
+                        ...inputStyle, 
+                        resize: "vertical", 
+                      }} 
+                    /> 
+                  </label> 
+     
+                  <label style={fieldStyle}> 
+                    GPS Location 
+                    <input 
+                      type="text" 
+                      value={gpsLocation} 
+                      onChange={(e) => 
+                        setGpsLocation(e.target.value) 
+                      } 
+                      required 
+                      style={inputStyle} 
+                    /> 
+                  </label> 
+     
+                  <label style={fieldStyle}> 
+                    Description 
+                    <textarea 
+                      rows="3" 
+                      value={description} 
+                      onChange={(e) => 
+                        setDescription(e.target.value) 
+                      } 
+                      placeholder="Describe the food, ingredients or serving details..." 
+                      style={{ 
+                        ...inputStyle, 
+                        resize: "vertical", 
+                      }} 
+                    /> 
+                  </label> 
+     
+                  <label style={fieldStyle}> 
+                    Special Instructions 
+                    <textarea 
+                      rows="3" 
+                      value={specialInstructions} 
+                      onChange={(e) => 
+                        setSpecialInstructions( 
+                          e.target.value 
+                        ) 
+                      } 
+                      placeholder="Allergens, packaging, storage or pickup notes..." 
+                      style={{ 
+                        ...inputStyle, 
+                        resize: "vertical", 
+                      }} 
+                    /> 
+                  </label> 
 
- 
-              <label style={fieldStyle}> 
-                Special Instructions 
-                <textarea 
-                  rows="3" 
-                  value={specialInstructions} 
-                  onChange={(e) => 
-                    setSpecialInstructions( 
-                      e.target.value 
-                    ) 
-                  } 
-                  placeholder="Allergens, packaging, storage or pickup notes..." 
-                  style={{ 
-                    ...inputStyle, 
-                    resize: "vertical", 
-                  }} 
-                /> 
-              </label> 
- 
-              <div 
-                style={{ 
-                  display: "flex", 
-                  justifyContent: "space-between", 
-                  alignItems: "flex-end",
-                  marginTop: 20, 
-                }} 
-              > 
-                <div style={{ flex: 1, paddingRight: 16 }}>
-                  {aiResult && (() => {
-                    const FOOD_INDICATORS = {
-                      "biryani": { fresh: "Normal color, moist grains, normal aroma/appearance, no discoloration", spoilage: "Drying, unusual discoloration, mold, slimy appearance", storage: "Keep hot or refrigerate promptly" },
-                      "rice": { fresh: "Separate/normal grains, normal color and texture", spoilage: "Dry/hard or unusually sticky texture, discoloration, mold", storage: "Hot holding or prompt refrigeration" },
-                      "dal": { fresh: "Normal color, smooth/expected consistency", spoilage: "Unusual separation, discoloration, surface growth, abnormal texture", storage: "Hot holding or refrigeration" },
-                      "curry": { fresh: "Normal color, expected consistency, no surface growth", spoilage: "Film, mold, unusual discoloration, abnormal separation/texture", storage: "Hot holding or refrigeration" },
-                      "roti": { fresh: "Normal color, soft/expected texture, no visible mold", spoilage: "Excessive dryness, discoloration, mold", storage: "Covered/appropriate storage; refrigeration if holding longer" },
-                      "naan": { fresh: "Normal color, soft/expected texture, no visible mold", spoilage: "Excessive dryness, discoloration, mold", storage: "Covered/appropriate storage; refrigeration if holding longer" },
-                      "chapati": { fresh: "Normal color, soft/expected texture, no visible mold", spoilage: "Excessive dryness, discoloration, mold", storage: "Covered/appropriate storage; refrigeration if holding longer" },
-                      "pizza": { fresh: "Normal toppings, intact appearance, no mold/slime", spoilage: "Mold, abnormal discoloration, degraded toppings", storage: "Refrigeration for longer holding" },
-                      "pasta": { fresh: "Normal color/texture, no visible spoilage", spoilage: "Excessive drying, discoloration, mold, abnormal texture", storage: "Hot holding or refrigeration" },
-                      "noodles": { fresh: "Normal color/texture, no visible spoilage", spoilage: "Excessive drying, discoloration, mold, abnormal texture", storage: "Hot holding or refrigeration" },
-                      "sandwich": { fresh: "Fresh bread, normal fillings, no mold", spoilage: "Mold on bread, soggy, off-smell", storage: "Refrigeration" },
-                      "fried foods": { fresh: "Normal color, intact coating, no visible spoilage", spoilage: "Excessive sogginess/degradation, discoloration, mold", storage: "Appropriate hot holding or prompt refrigeration" }
-                    };
-                    const details = FOOD_INDICATORS[aiResult.food_type?.toLowerCase()] || null;
-                    return (
+                  <div 
+                    style={{ 
+                      display: "flex", 
+                      justifyContent: "flex-end", 
+                      gap: 8, 
+                      marginTop: 20, 
+                    }} 
+                  > 
+                    <button 
+                      type="button" 
+                      onClick={() => { 
+                        setIsRegisterOpen(false); 
+                        setIsEditOpen(false); 
+                      }} 
+                      style={secondaryButton} 
+                    > 
+                      Cancel 
+                    </button> 
+       
+                    <button 
+                      type="submit" 
+                      style={primaryButton} 
+                      disabled={isAiLoading}
+                    > 
+                      {isAiLoading ? "Processing..." : isEditOpen ? "Save Changes" : "Run AI Assessment"} 
+                    </button> 
+                  </div>
+                </>
+              ) : (() => {
+                const FOOD_INDICATORS = {
+                  "biryani": { fresh: "Normal color, moist grains, normal aroma/appearance, no discoloration", spoilage: "Drying, unusual discoloration, mold, slimy appearance", storage: "Keep hot or refrigerate promptly" },
+                  "rice": { fresh: "Separate/normal grains, normal color and texture", spoilage: "Dry/hard or unusually sticky texture, discoloration, mold", storage: "Hot holding or prompt refrigeration" },
+                  "dal": { fresh: "Normal color, smooth/expected consistency", spoilage: "Unusual separation, discoloration, surface growth, abnormal texture", storage: "Hot holding or refrigeration" },
+                  "curry": { fresh: "Normal color, expected consistency, no surface growth", spoilage: "Film, mold, unusual discoloration, abnormal separation/texture", storage: "Hot holding or refrigeration" },
+                  "roti": { fresh: "Normal color, soft/expected texture, no visible mold", spoilage: "Excessive dryness, discoloration, mold", storage: "Covered/appropriate storage; refrigeration if holding longer" },
+                  "naan": { fresh: "Normal color, soft/expected texture, no visible mold", spoilage: "Excessive dryness, discoloration, mold", storage: "Covered/appropriate storage; refrigeration if holding longer" },
+                  "chapati": { fresh: "Normal color, soft/expected texture, no visible mold", spoilage: "Excessive dryness, discoloration, mold", storage: "Covered/appropriate storage; refrigeration if holding longer" },
+                  "pizza": { fresh: "Normal toppings, intact appearance, no mold/slime", spoilage: "Mold, abnormal discoloration, degraded toppings", storage: "Refrigeration for longer holding" },
+                  "pasta": { fresh: "Normal color/texture, no visible spoilage", spoilage: "Excessive drying, discoloration, mold, abnormal texture", storage: "Hot holding or refrigeration" },
+                  "noodles": { fresh: "Normal color/texture, no visible spoilage", spoilage: "Excessive drying, discoloration, mold, abnormal texture", storage: "Hot holding or refrigeration" },
+                  "sandwich": { fresh: "Fresh bread, normal fillings, no mold", spoilage: "Mold on bread, soggy, off-smell", storage: "Refrigeration" },
+                  "fried foods": { fresh: "Normal color, intact coating, no visible spoilage", spoilage: "Excessive sogginess/degradation, discoloration, mold", storage: "Appropriate hot holding or prompt refrigeration" }
+                };
+                const details = FOOD_INDICATORS[aiResult.food_type?.toLowerCase()] || null;
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     <div style={{
-                      padding: 12,
-                      background: "#EAF9F4",
-                      border: "1px solid #10B981",
-                      borderRadius: 8,
-                      fontSize: 12,
-                      color: "#067A62"
+                      padding: 16,
+                      background: "#F9FAFB",
+                      border: "1px solid #D1D5DB",
+                      borderRadius: 12,
+                      fontSize: 13,
+                      color: "#1F2937",
+                      width: "100%",
+                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                      textAlign: "left"
                     }}>
-                      <strong>🤖 AI Assessment Results:</strong><br/>
-                      Identified as: <b style={{ textTransform: "capitalize" }}>{aiResult.food_type}</b><br/>
-                      Freshness: <b style={{ textTransform: "capitalize" }}>{aiResult.freshness_score}% ({aiResult.freshness_label === 'fresh' ? 'Fresh-looking' : aiResult.freshness_label === 'moderate' ? 'Questionable' : 'Visible spoilage'})</b>
+                      <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: "bold", borderBottom: "1px solid #E5E7EB", paddingBottom: 6 }}>🤖 AI-Estimated Freshness Check</h3>
                       
-                      {details && (
-                        <div style={{ marginTop: 8, borderTop: "1px solid #A7F3D0", paddingTop: 8 }}>
-                          <strong style={{ color: "#047857" }}>🍽️ Quality Indicators for this Food:</strong>
-                          <ul style={{ paddingLeft: 16, margin: "4px 0 0 0" }}>
-                            <li><b>Fresh:</b> {details.fresh}</li>
-                            <li><b>Spoilage:</b> {details.spoilage}</li>
-                            <li><b>Storage:</b> {details.storage}</li>
-                          </ul>
+                      {imageFile && (
+                        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+                          <img 
+                            src={URL.createObjectURL(imageFile)} 
+                            alt="Uploaded Food" 
+                            style={{ maxWidth: "100%", maxHeight: "180px", borderRadius: 8, objectFit: "cover" }} 
+                          />
                         </div>
                       )}
-                    </div>
-                  )})()}
-                </div>
 
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button 
-                    type="button" 
-                    onClick={() => { 
-                      setIsRegisterOpen(false); 
-                      setIsEditOpen(false); 
-                    }} 
-                    style={secondaryButton} 
-                    disabled={isAiLoading}
-                  > 
-                    Cancel 
-                  </button> 
-   
-                  <button 
-                    type="submit" 
-                    style={primaryButton} 
-                    disabled={isAiLoading}
-                  > 
-                    {isAiLoading 
-                      ? "Processing..." 
-                      : isEditOpen 
-                      ? "Save Changes" 
-                      : aiResult 
-                      ? "Confirm & Register Food"
-                      : "Run AI Assessment"} 
-                  </button> 
-                </div>
-              </div> 
-            </form> 
-          </ModalShell> 
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                        <div><strong>Detected Food:</strong> <span style={{ textTransform: "capitalize", fontWeight: "bold" }}>{aiResult.food_type}</span></div>
+                        <div><strong>Confidence:</strong> <span style={{ fontWeight: "bold" }}>{aiResult.freshness_score}%</span></div>
+                      </div>
+                      
+                      <div style={{ marginBottom: 12 }}>
+                        <strong>Visual Freshness:</strong> <span style={{
+                          fontWeight: "bold",
+                          color: aiResult.freshness_label === 'fresh' ? '#059669' : aiResult.freshness_label === 'moderate' ? '#D97706' : '#DC2626',
+                          textTransform: "uppercase"
+                        }}>
+                          {aiResult.freshness_label === 'fresh' ? 'FRESH' : aiResult.freshness_label === 'moderate' ? 'MODERATE / QUESTIONABLE' : 'SPOILED'}
+                        </span>
+                      </div>
+                      
+                      <div style={{ padding: 10, background: "white", borderRadius: 8, border: "1px solid #E5E7EB", marginBottom: 12 }}>
+                        <strong>AI Assessment:</strong> {aiResult.recommendation}
+                      </div>
+
+                      {details && (
+                        <div style={{ marginTop: 12, borderTop: "1px solid #E5E7EB", paddingTop: 10 }}>
+                          <strong style={{ color: "#374151", display: "block", marginBottom: 6 }}>🍽️ Quality Guidelines for {aiResult.food_type}:</strong>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
+                            <div><b>🟢 Fresh-looking indicators:</b> {details.fresh}</div>
+                            <div><b>🔴 Main deterioration indicators:</b> {details.spoilage}</div>
+                            <div><b>❄️ Suggested storage:</b> {details.storage}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{
+                        marginTop: 12,
+                        padding: 10,
+                        background: "#FEF2F2",
+                        border: "1px solid #FEE2E2",
+                        borderRadius: 8,
+                        color: "#991B1B",
+                        fontSize: 11,
+                        lineHeight: "1.4"
+                      }}>
+                        <strong>⚠️ SAFETY DISCLAIMER:</strong> AI assessment is based on visual characteristics and does <strong>not</strong> certify food safety. Actual food safety depends on storage temperature, preparation time, handling, hygiene, contamination, packaging, expiry information, and storage conditions.
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiResult(null);
+                          setImageFile(null);
+                        }}
+                        style={{
+                          ...secondaryButton,
+                          padding: "10px 20px"
+                        }}
+                      >
+                        Analyze Again
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleConfirmRegister}
+                        style={{
+                          ...primaryButton,
+                          padding: "10px 20px"
+                        }}
+                        disabled={isAiLoading}
+                      >
+                        {isAiLoading ? "Processing..." : "Confirm & Continue"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </form>
+          </ModalShell>
         )} 
  
         {/* ===================================================== 

@@ -53,8 +53,8 @@ export default function FoodDonation() {
 
       aiResult = await aiResponse.json();
       
-      if (aiResult.error) {
-        throw new Error(aiResult.error);
+      if (!aiResult.is_valid_image) {
+        throw new Error(aiResult.rejection_reason || "Unable to confidently analyze this image. Please upload a clearer image.");
       }
       
       setMessage("Saving image and listing...");
