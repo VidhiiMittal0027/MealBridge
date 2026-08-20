@@ -1,14 +1,13 @@
 import torch
 import torch.nn as nn
-from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights
+from torchvision.models import mobilenet_v3_small
 
 class MealBridgeFreshnessModel(nn.Module):
     def __init__(self, num_categories=3, num_freshness_classes=3):
         super().__init__()
         
-        # Load pre-trained MobileNetV3 (lightweight, good for API inference)
-        weights = MobileNet_V3_Small_Weights.DEFAULT
-        self.backbone = mobilenet_v3_small(weights=weights)
+        # Load MobileNetV3 without pretrained weights (our own weights are loaded via load_state_dict)
+        self.backbone = mobilenet_v3_small(weights=None)
         
         # Extract the number of features entering the classifier
         in_features = self.backbone.classifier[0].in_features

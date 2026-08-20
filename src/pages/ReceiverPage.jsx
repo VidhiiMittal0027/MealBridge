@@ -1,6 +1,6 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useMemo } from "react";
 import { useUser, useAuth } from "@clerk/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { MealBridgeContext } from "../context/MealBridgeContext";
 import DashboardLayout from "../components/DashboardLayout";
 import Navbar from "../components/Navbar";
@@ -1453,6 +1453,171 @@ const styles = `
       border-radius: 20px;
     }
   }
+
+  /* SUB-PAGE MODULE STYLES */
+  .category-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .category-pill {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid ${COLORS.border};
+    background: white;
+    color: ${COLORS.text};
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .category-pill:hover,
+  .category-pill.active {
+    background: ${COLORS.emerald};
+    color: white;
+    border-color: ${COLORS.emerald};
+    box-shadow: 0 4px 12px rgba(22, 160, 133, 0.25);
+  }
+
+  .search-box-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    border: 1px solid ${COLORS.border};
+    border-radius: 14px;
+    padding: 10px 16px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 15px rgba(7, 26, 47, 0.03);
+  }
+
+  .search-box-input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+    color: ${COLORS.text};
+    background: transparent;
+    font-family: inherit;
+  }
+
+  .requests-filter-tabs {
+    display: flex;
+    gap: 10px;
+    border-bottom: 1px solid ${COLORS.border};
+    margin-bottom: 22px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .filter-tab {
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: ${COLORS.muted};
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .filter-tab:hover {
+    color: ${COLORS.text};
+    background: #eef4f3;
+  }
+
+  .filter-tab.active {
+    color: ${COLORS.emerald};
+    background: ${COLORS.softGreen};
+  }
+
+  .module-card {
+    background: white;
+    border: 1px solid ${COLORS.border};
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(7, 26, 47, 0.04);
+    margin-bottom: 20px;
+  }
+
+  .module-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: white;
+    border: 1px solid ${COLORS.border};
+    margin-bottom: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .notif-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(7, 26, 47, 0.06);
+  }
+
+  .notif-unread {
+    border-left: 4px solid ${COLORS.emerald};
+    background: #F7FBFA;
+  }
+
+  .notif-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: ${COLORS.softGreen};
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .faq-card {
+    background: white;
+    border: 1px solid ${COLORS.border};
+    border-radius: 16px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+
+  .faq-question {
+    width: 100%;
+    text-align: left;
+    padding: 18px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 800;
+    color: ${COLORS.navy};
+    font-family: inherit;
+  }
+
+  .faq-answer {
+    padding: 0 20px 18px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: ${COLORS.muted};
+    border-top: 1px solid #F0F4F3;
+    padding-top: 14px;
+  }
 `;
 
 export default function ReceiverPage() {
@@ -1502,6 +1667,48 @@ export default function ReceiverPage() {
   const [donorMessage, setDonorMessage] = useState("");
   const [questionText, setQuestionText] = useState("");
 
+  const [uploadedDocName, setUploadedDocName] = useState(
+    user?.unsafeMetadata?.ngoDocName || "ngo_darpan_registration.pdf"
+  );
+  const [isSavingNgoProfile, setIsSavingNgoProfile] = useState(false);
+
+  const [receiverTicketCategory, setReceiverTicketCategory] = useState("Urgent Delivery Assistance");
+  const [receiverTicketSubject, setReceiverTicketSubject] = useState("");
+  const [receiverTicketMessage, setReceiverTicketMessage] = useState("");
+  const [receiverTicketPriority, setReceiverTicketPriority] = useState("High");
+  const [receiverSubmittedTicket, setReceiverSubmittedTicket] = useState(null);
+  const [isSubmittingReceiverTicket, setIsSubmittingReceiverTicket] = useState(false);
+
+  /* =========================================================
+     ROUTING & FILTERS
+  ========================================================= */
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  const isOverview =
+    currentPath === "/receiver-dashboard" ||
+    currentPath === "/receiver-dashboard/" ||
+    currentPath === "/receiver" ||
+    currentPath === "/ngo-dashboard";
+  const isBrowse =
+    currentPath.startsWith("/receiver-dashboard/browse") ||
+    currentPath.startsWith("/ngo-matching");
+  const isRequests = currentPath.startsWith("/receiver-dashboard/requests");
+  const isHistory = currentPath.startsWith("/receiver-dashboard/history");
+  const isDelivery = currentPath.startsWith("/receiver-dashboard/delivery");
+  const isNotifications = currentPath.startsWith(
+    "/receiver-dashboard/notifications"
+  );
+  const isProfile = currentPath.startsWith("/receiver-dashboard/profile");
+  const isImpact = currentPath.startsWith("/receiver-dashboard/impact");
+  const isSupport = currentPath.startsWith("/receiver-dashboard/support");
+
+  // Filters & Accordion State
+  const [browseCategory, setBrowseCategory] = useState("All");
+  const [browseSearch, setBrowseSearch] = useState("");
+  const [requestsFilter, setRequestsFilter] = useState("all");
+  const [openFaq, setOpenFaq] = useState(null);
+
   /* =========================================================
      DATA
   ========================================================= */
@@ -1518,6 +1725,61 @@ export default function ReceiverPage() {
       (orgDetails?.orgName || "City Hope Kitchen")
   );
 
+  const filteredAvailableItems = useMemo(() => {
+    return availableItems.filter((item) => {
+      const cat = (item.category || "").toLowerCase();
+      const veg = item.vegNonVeg === "Veg";
+      const filter = browseCategory.toLowerCase();
+
+      let matchCategory = true;
+      if (browseCategory === "Veg") matchCategory = veg;
+      else if (browseCategory === "Non-Veg") matchCategory = !veg;
+      else if (browseCategory !== "All") matchCategory = cat.includes(filter);
+
+      const matchSearch =
+        !browseSearch ||
+        (item.name && item.name.toLowerCase().includes(browseSearch.toLowerCase())) ||
+        (item.donorName && item.donorName.toLowerCase().includes(browseSearch.toLowerCase())) ||
+        (item.pickupAddress && item.pickupAddress.toLowerCase().includes(browseSearch.toLowerCase()));
+
+      return matchCategory && matchSearch;
+    });
+  }, [availableItems, browseCategory, browseSearch]);
+
+  const filteredNGOOrders = useMemo(() => {
+    return myNGOOrders.filter((order) => {
+      if (requestsFilter === "all") return true;
+      if (requestsFilter === "pending")
+        return order.status === "Pending" || order.status === "Matching Pending";
+      if (requestsFilter === "accepted")
+        return (
+          order.status === "Accepted" ||
+          order.status === "Ready for Pickup" ||
+          order.status === "Preparing"
+        );
+      if (requestsFilter === "completed")
+        return order.status === "Completed" || order.status === "Picked Up";
+      if (requestsFilter === "declined")
+        return order.status === "Declined" || order.status === "Cancelled";
+      return true;
+    });
+  }, [myNGOOrders, requestsFilter]);
+
+  const completedOrderHistory = useMemo(() => {
+    return myNGOOrders.filter(
+      (o) => o.status === "Completed" || o.status === "Picked Up"
+    );
+  }, [myNGOOrders]);
+
+  const activeDeliveries = useMemo(() => {
+    return myNGOOrders.filter(
+      (o) =>
+        o.status === "Accepted" ||
+        o.status === "Ready for Pickup" ||
+        o.status === "Preparing"
+    );
+  }, [myNGOOrders]);
+
   const activeMessages = selectedItem
     ? (messages || []).filter(
         (m) => m.donationId === selectedItem.id
@@ -1529,9 +1791,7 @@ export default function ReceiverPage() {
     0
   );
 
-  const completedOrders = myNGOOrders.filter(
-    (o) => o.status === "Completed"
-  ).length;
+  const completedOrders = completedOrderHistory.length;
 
   const pendingOrders = myNGOOrders.filter(
     (o) =>
@@ -1576,6 +1836,60 @@ export default function ReceiverPage() {
 
     registerOrganization(details);
     setIsRegisterModalOpen(false);
+  };
+
+  const handleSaveProfileFromPage = async (e) => {
+    e.preventDefault();
+    setIsSavingNgoProfile(true);
+    const details = {
+      orgName: orgName || orgDetails?.orgName || "City Hope Kitchen",
+      orgType: orgType || orgDetails?.orgType || "NGO",
+      regNum: regNum || orgDetails?.regNum || "NGO-88219-IND",
+      contactName: contactName || orgDetails?.contactName || user?.fullName || "Director Coordinator",
+      email: email || orgDetails?.email || user?.primaryEmailAddress?.emailAddress || "contact@cityhope.org",
+      phone: phone || orgDetails?.phone || "9876543210",
+      address: address || orgDetails?.address || "Building 4, Community Rescue Hub",
+      city: city || orgDetails?.city || "New Delhi",
+      state: stateName || orgDetails?.state || "Delhi",
+      pinCode: pinCode || orgDetails?.pinCode || "110001",
+      dailyServed: Number(dailyServed) || 150,
+      description: description || orgDetails?.description || "",
+      documentName: uploadedDocName,
+    };
+    registerOrganization(details);
+    try {
+      if (user?.update) {
+        await user.update({
+          unsafeMetadata: {
+            ...user.unsafeMetadata,
+            orgDetails: details,
+            verificationStatus: "verified",
+          },
+        });
+      }
+    } catch (err) {
+      console.error("Error updating Clerk metadata:", err);
+    } finally {
+      setIsSavingNgoProfile(false);
+    }
+  };
+
+  const handleReceiverTicketSubmit = (e) => {
+    e.preventDefault();
+    setIsSubmittingReceiverTicket(true);
+    setTimeout(() => {
+      const ticketId = `MB-NGO-${Math.floor(10000 + Math.random() * 90000)}`;
+      setReceiverSubmittedTicket({
+        id: ticketId,
+        category: receiverTicketCategory,
+        subject: receiverTicketSubject,
+        time: "Just now",
+        priority: receiverTicketPriority,
+      });
+      setIsSubmittingReceiverTicket(false);
+      setReceiverTicketSubject("");
+      setReceiverTicketMessage("");
+    }, 500);
   };
 
   const handleConfirmRequest = (e) => {
@@ -1857,472 +2171,1082 @@ export default function ReceiverPage() {
             </div>
           )}
 
-          {/* HERO */}
-          <section className="premium-hero">
-            <div className="hero-content">
-              <div className="hero-kicker">
-                Food Rescue Command Center
-              </div>
-
-              <h1 className="hero-title">
-                Turn surplus into
-                <br />
-                <span>real impact.</span>
-              </h1>
-
-              <p className="hero-description">
-                Welcome back,{" "}
-                <strong>
-                  {orgDetails?.orgName ||
-                    user?.firstName ||
-                    "NGO Partner"}
-                </strong>
-                . Discover verified surplus food,
-                connect with donors and get meals to
-                the people who need them.
-              </p>
-
-              <div className="hero-actions">
-                <button
-                  className="hero-primary"
-                  onClick={() =>
-                    document
-                      .getElementById(
-                        "available-donations"
-                      )
-                      ?.scrollIntoView({
-                        behavior: "smooth",
-                      })
-                  }
-                >
-                  Find Available Food →
-                </button>
-
-                <button
-                  className="hero-secondary"
-                  onClick={() =>
-                    document
-                      .getElementById(
-                        "my-orders"
-                      )
-                      ?.scrollIntoView({
-                        behavior: "smooth",
-                      })
-                  }
-                >
-                  View My Requests
-                </button>
-              </div>
-            </div>
-
-            <div className="hero-network">
-              <div className="network-ring ring-one" />
-              <div className="network-ring ring-two" />
-              <div className="network-ring ring-three" />
-
-              <div className="network-center">
-                ♻
-              </div>
-
-              <div className="network-node node-one">
-                🍱
-              </div>
-
-              <div className="network-node node-two">
-                🤝
-              </div>
-
-              <div className="network-node node-three">
-                ❤️
-              </div>
-
-              <div className="network-node node-four">
-                📍
-              </div>
-            </div>
-          </section>
-
-          {/* IMPACT STATS */}
-          <section className="impact-grid">
-            <div className="impact-card">
-              <span className="impact-trend">
-                LIVE
-              </span>
-
-              <div className="impact-icon">
-                🍱
-              </div>
-
-              <div className="impact-value">
-                {totalServings.toLocaleString()}
-              </div>
-
-              <div className="impact-label">
-                Meals available now
-              </div>
-            </div>
-
-            <div className="impact-card">
-              <span className="impact-trend">
-                ACTIVE
-              </span>
-
-              <div className="impact-icon">
-                🤝
-              </div>
-
-              <div className="impact-value">
-                {pendingOrders}
-              </div>
-
-              <div className="impact-label">
-                Active requests
-              </div>
-            </div>
-
-            <div className="impact-card">
-              <span className="impact-trend">
-                IMPACT
-              </span>
-
-              <div className="impact-icon">
-                ❤️
-              </div>
-
-              <div className="impact-value">
-                {peopleServed.toLocaleString()}
-              </div>
-
-              <div className="impact-label">
-                People reached
-              </div>
-            </div>
-
-            <div className="impact-card">
-              <span className="impact-trend">
-                DONE
-              </span>
-
-              <div className="impact-icon">
-                ✓
-              </div>
-
-              <div className="impact-value">
-                {completedOrders}
-              </div>
-
-              <div className="impact-label">
-                Completed pickups
-              </div>
-            </div>
-          </section>
-
-          {/* AVAILABLE FOOD */}
-          <section
-            className="section"
-            id="available-donations"
-          >
-            <div className="section-header">
-              <div>
-                <div className="section-kicker">
-                  Live food network
-                </div>
-
-                <h2 className="section-title">
-                  Available donations
-                </h2>
-
-                <p className="section-description">
-                  Fresh surplus food ready to be
-                  matched with your organization.
-                </p>
-              </div>
-
-              <div className="section-count">
-                {availableItems.length}{" "}
-                available
-              </div>
-            </div>
-
-            {availableItems.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">
-                  🍽️
-                </div>
-
-                <h3>
-                  No donations available right
-                  now
-                </h3>
-
-                <p>
-                  New surplus meals will appear
-                  here as soon as donors register
-                  them with MealBridge.
-                </p>
-              </div>
-            ) : (
-              <div className="donations-grid">
-                {availableItems.map((item) => (
-                  <DonationCard
-                    key={item.id}
-                    item={item}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* ORDERS */}
-          {isSignedIn && (
-            <section
-              className="section"
-              id="my-orders"
-            >
-              <div className="section-header">
-                <div>
-                  <div className="section-kicker">
-                    Request management
+          {/* =====================================================
+              1. OVERVIEW PAGE
+              ===================================================== */}
+          {isOverview && (
+            <>
+              {/* HERO */}
+              <section className="premium-hero">
+                <div className="hero-content">
+                  <div className="hero-kicker">
+                    Food Rescue Command Center
                   </div>
 
-                  <h2 className="section-title">
-                    My requests
-                  </h2>
+                  <h1 className="hero-title">
+                    Turn surplus into
+                    <br />
+                    <span>real impact.</span>
+                  </h1>
 
-                  <p className="section-description">
-                    Track your food requests and
-                    pickup progress.
+                  <p className="hero-description">
+                    Welcome back,{" "}
+                    <strong>
+                      {orgDetails?.orgName ||
+                        user?.firstName ||
+                        "NGO Partner"}
+                    </strong>
+                    . Discover verified surplus food,
+                    connect with donors and get meals to
+                    the people who need them.
                   </p>
-                </div>
 
-                <div className="section-count">
-                  {myNGOOrders.length} total
-                </div>
-              </div>
-
-              <div className="orders-layout">
-                <div className="orders-card">
-                  {myNGOOrders.length === 0 ? (
-                    <div
-                      style={{
-                        padding: "38px 10px",
-                        textAlign: "center",
-                      }}
+                  <div className="hero-actions">
+                    <Link
+                      to="/receiver-dashboard/browse"
+                      className="hero-primary"
+                      style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
                     >
-                      <div className="empty-icon">
-                        📦
-                      </div>
+                      Find Available Food →
+                    </Link>
 
-                      <h3
-                        style={{
-                          margin: 0,
-                          color: COLORS.navy,
-                          fontSize: "16px",
-                        }}
-                      >
-                        No requests yet
-                      </h3>
+                    <Link
+                      to="/receiver-dashboard/requests"
+                      className="hero-secondary"
+                      style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+                    >
+                      View My Requests
+                    </Link>
+                  </div>
+                </div>
 
-                      <p
-                        style={{
-                          margin:
-                            "7px auto 0",
-                          maxWidth:
-                            "380px",
-                          color:
-                            COLORS.muted,
-                          fontSize:
-                            "11px",
-                        }}
-                      >
-                        When you request surplus
-                        food, its live progress
-                        will appear here.
+                <div className="hero-network">
+                  <div className="network-ring ring-one" />
+                  <div className="network-ring ring-two" />
+                  <div className="network-ring ring-three" />
+                  <div className="network-center">♻</div>
+                  <div className="network-node node-one">🍱</div>
+                  <div className="network-node node-two">🤝</div>
+                  <div className="network-node node-three">❤️</div>
+                  <div className="network-node node-four">📍</div>
+                </div>
+              </section>
+
+              {/* IMPACT STATS */}
+              <section className="impact-grid">
+                <div className="impact-card">
+                  <span className="impact-trend">LIVE</span>
+                  <div className="impact-icon">🍱</div>
+                  <div className="impact-value">{totalServings.toLocaleString()}</div>
+                  <div className="impact-label">Meals available now</div>
+                </div>
+
+                <div className="impact-card">
+                  <span className="impact-trend">ACTIVE</span>
+                  <div className="impact-icon">🤝</div>
+                  <div className="impact-value">{pendingOrders}</div>
+                  <div className="impact-label">Active requests</div>
+                </div>
+
+                <div className="impact-card">
+                  <span className="impact-trend">IMPACT</span>
+                  <div className="impact-icon">❤️</div>
+                  <div className="impact-value">{peopleServed.toLocaleString()}</div>
+                  <div className="impact-label">People reached</div>
+                </div>
+
+                <div className="impact-card">
+                  <span className="impact-trend">DONE</span>
+                  <div className="impact-icon">✓</div>
+                  <div className="impact-value">{completedOrders}</div>
+                  <div className="impact-label">Completed pickups</div>
+                </div>
+              </section>
+
+              {/* RECENT REQUESTS SUMMARY */}
+              {isSignedIn && (
+                <section className="section" id="my-orders">
+                  <div className="section-header">
+                    <div>
+                      <div className="section-kicker">Request Activity</div>
+                      <h2 className="section-title">Active Requests</h2>
+                      <p className="section-description">
+                        Track live status and incoming donation pickups.
                       </p>
                     </div>
-                  ) : (
-                    myNGOOrders.map((order) => {
-                      const activeStep =
-                        getTimelineIndex(
-                          order.status
-                        );
+                    <Link
+                      to="/receiver-dashboard/requests"
+                      className="section-count"
+                      style={{ textDecoration: "none", cursor: "pointer" }}
+                    >
+                      View All ({myNGOOrders.length}) →
+                    </Link>
+                  </div>
 
-                      return (
-                        <div
-                          className="order-item"
-                          key={order.id}
-                        >
-                          <div className="order-top">
-                            <h3 className="order-name">
-                              🍱{" "}
-                              {order.foodRequested}
-                            </h3>
-
-                            <span
-                              className={`status-pill ${getStatusClass(
-                                order.status
-                              )}`}
-                            >
-                              {order.status}
-                            </span>
-                          </div>
-
-                          <div className="order-details">
-                            <span>
-                              👥{" "}
-                              {
-                                order.expectedPeople
-                              }{" "}
-                              servings
-                            </span>
-
-                            <span>
-                              🕒{" "}
-                              {order.orderTime
-                                ? new Date(
-                                    order.orderTime
-                                  ).toLocaleDateString()
-                                : "Recently"}
-                            </span>
-
-                            {order.prepTime && (
-                              <span>
-                                📍 Pickup{" "}
-                                {order.prepTime}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="timeline">
-                            {[
-                              "Requested",
-                              "Accepted",
-                              "Preparing",
-                              "Ready",
-                              "Pickup",
-                              "Done",
-                            ].map(
-                              (label, index) => (
-                                <React.Fragment
-                                  key={label}
-                                >
-                                  <div className="timeline-step">
-                                    <div
-                                      className={`timeline-dot ${
-                                        index <=
-                                        activeStep
-                                          ? "active"
-                                          : ""
-                                      }`}
-                                      title={
-                                        label
-                                      }
-                                    >
-                                      {index <
-                                      activeStep
-                                        ? "✓"
-                                        : index ===
-                                          activeStep
-                                        ? "•"
-                                        : ""}
-                                    </div>
-                                  </div>
-
-                                  {index <
-                                    5 && (
-                                    <div
-                                      className={`timeline-line ${
-                                        index <
-                                        activeStep
-                                          ? "active"
-                                          : ""
-                                      }`}
-                                    />
-                                  )}
-                                </React.Fragment>
-                              )
-                            )}
-                          </div>
+                  <div className="orders-layout">
+                    <div className="orders-card">
+                      {myNGOOrders.length === 0 ? (
+                        <div style={{ padding: "38px 10px", textAlign: "center" }}>
+                          <div className="empty-icon">📦</div>
+                          <h3 style={{ margin: 0, color: COLORS.navy, fontSize: "16px" }}>
+                            No requests yet
+                          </h3>
+                          <p style={{ margin: "7px auto 0", maxWidth: "380px", color: COLORS.muted, fontSize: "11px" }}>
+                            When you request surplus food, its live progress will appear here.
+                          </p>
                         </div>
-                      );
-                    })
-                  )}
+                      ) : (
+                        myNGOOrders.slice(0, 3).map((order) => {
+                          const activeStep = getTimelineIndex(order.status);
+                          return (
+                            <div className="order-item" key={order.id}>
+                              <div className="order-top">
+                                <h3 className="order-name">🍱 {order.foodRequested}</h3>
+                                <span className={`status-pill ${getStatusClass(order.status)}`}>
+                                  {order.status}
+                                </span>
+                              </div>
+                              <div className="order-details">
+                                <span>👥 {order.expectedPeople} servings</span>
+                                <span>🕒 {order.orderTime ? new Date(order.orderTime).toLocaleDateString() : "Recently"}</span>
+                                {order.prepTime && <span>📍 Pickup {order.prepTime}</span>}
+                              </div>
+                              <div className="timeline">
+                                {["Requested", "Accepted", "Preparing", "Ready", "Pickup", "Done"].map((label, index) => (
+                                  <React.Fragment key={label}>
+                                    <div className="timeline-step">
+                                      <div className={`timeline-dot ${index <= activeStep ? "active" : ""}`} title={label}>
+                                        {index < activeStep ? "✓" : index === activeStep ? "•" : ""}
+                                      </div>
+                                    </div>
+                                    {index < 5 && (
+                                      <div className={`timeline-line ${index < activeStep ? "active" : ""}`} />
+                                    )}
+                                  </React.Fragment>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    <div className="organization-card">
+                      <div className="org-label">Your organization</div>
+                      <h3 className="org-name">{orgDetails?.orgName || "City Hope Kitchen"}</h3>
+                      <div className="org-type">{orgDetails?.orgType || "Community Receiver"}</div>
+                      <div className="org-divider" />
+                      <div className="org-stats">
+                        <div className="org-stat">
+                          <strong>{peopleServed}</strong>
+                          <span>PEOPLE SERVED</span>
+                        </div>
+                        <div className="org-stat">
+                          <strong>{myNGOOrders.length}</strong>
+                          <span>REQUESTS</span>
+                        </div>
+                        <div className="org-stat">
+                          <strong>{completedOrders}</strong>
+                          <span>COMPLETED</span>
+                        </div>
+                      </div>
+                      <div className="trust-row">
+                        <span className="trust-stars">★★★★★</span>
+                        <span className="trust-text">Verified Community Partner</span>
+                      </div>
+                      <Link
+                        to="/receiver-dashboard/profile"
+                        className="register-button"
+                        style={{ width: "100%", marginTop: "17px", display: "inline-block", textAlign: "center", textDecoration: "none" }}
+                      >
+                        Manage Profile →
+                      </Link>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* AVAILABLE FOOD PREVIEW */}
+              <section className="section" id="available-donations">
+                <div className="section-header">
+                  <div>
+                    <div className="section-kicker">Live food network</div>
+                    <h2 className="section-title">Available Donations Nearby</h2>
+                    <p className="section-description">
+                      Fresh surplus food ready to be matched with your organization.
+                    </p>
+                  </div>
+                  <Link
+                    to="/receiver-dashboard/browse"
+                    className="section-count"
+                    style={{ textDecoration: "none" }}
+                  >
+                    Browse All ({availableItems.length}) →
+                  </Link>
                 </div>
 
-                {/* ORGANIZATION CARD */}
-                <div className="organization-card">
-                  <div className="org-label">
-                    Your organization
+                {availableItems.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">🍽️</div>
+                    <h3>No donations available right now</h3>
+                    <p>New surplus meals will appear here as soon as donors register them.</p>
+                  </div>
+                ) : (
+                  <div className="donations-grid">
+                    {availableItems.slice(0, 4).map((item) => (
+                      <DonationCard key={item.id} item={item} />
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+
+          {/* =====================================================
+              2. BROWSE / MATCHED DONATIONS PAGE
+              ===================================================== */}
+          {isBrowse && (
+            <section className="section">
+              <div className="section-header">
+                <div>
+                  <div className="section-kicker">Browse Food</div>
+                  <h2 className="section-title">Browse & Matched Donations</h2>
+                  <p className="section-description">
+                    Search and claim fresh surplus meals directly from verified donors.
+                  </p>
+                </div>
+                <div className="section-count">{filteredAvailableItems.length} Available</div>
+              </div>
+
+              {/* SEARCH & FILTERS */}
+              <div className="search-box-wrap">
+                <span style={{ fontSize: "16px" }}>🔍</span>
+                <input
+                  type="text"
+                  className="search-box-input"
+                  placeholder="Search donations by food name, donor, or location..."
+                  value={browseSearch}
+                  onChange={(e) => setBrowseSearch(e.target.value)}
+                />
+                {browseSearch && (
+                  <button
+                    onClick={() => setBrowseSearch("")}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: COLORS.muted, fontWeight: 800 }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className="category-pills">
+                {["All", "Cooked Meals", "Raw Groceries", "Baked Goods", "Packaged", "Veg", "Non-Veg"].map((cat) => (
+                  <button
+                    key={cat}
+                    className={`category-pill ${browseCategory === cat ? "active" : ""}`}
+                    onClick={() => setBrowseCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {filteredAvailableItems.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">🍱</div>
+                  <h3>No matching donations found</h3>
+                  <p>Try adjusting your search query or category filters.</p>
+                </div>
+              ) : (
+                <div className="donations-grid">
+                  {filteredAvailableItems.map((item) => (
+                    <DonationCard key={item.id} item={item} />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* =====================================================
+              3. MY REQUESTS PAGE
+              ===================================================== */}
+          {isRequests && (
+            <section className="section">
+              <div className="section-header">
+                <div>
+                  <div className="section-kicker">Request Center</div>
+                  <h2 className="section-title">My Food Requests</h2>
+                  <p className="section-description">
+                    Manage your sent, pending, and accepted food donation requests.
+                  </p>
+                </div>
+                <div className="section-count">{filteredNGOOrders.length} Requests</div>
+              </div>
+
+              {/* TABS */}
+              <div className="requests-filter-tabs">
+                {[
+                  { id: "all", label: "All Requests", count: myNGOOrders.length },
+                  { id: "pending", label: "Pending", count: myNGOOrders.filter((o) => o.status === "Pending" || o.status === "Matching Pending").length },
+                  { id: "accepted", label: "Accepted & Preparing", count: myNGOOrders.filter((o) => o.status === "Accepted" || o.status === "Ready for Pickup" || o.status === "Preparing").length },
+                  { id: "completed", label: "Completed", count: completedOrders },
+                  { id: "declined", label: "Declined", count: myNGOOrders.filter((o) => o.status === "Declined" || o.status === "Cancelled").length },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    className={`filter-tab ${requestsFilter === tab.id ? "active" : ""}`}
+                    onClick={() => setRequestsFilter(tab.id)}
+                  >
+                    {tab.label} ({tab.count})
+                  </button>
+                ))}
+              </div>
+
+              <div className="orders-card">
+                {filteredNGOOrders.length === 0 ? (
+                  <div style={{ padding: "40px 10px", textAlign: "center" }}>
+                    <div className="empty-icon">📋</div>
+                    <h3 style={{ margin: 0, color: COLORS.navy, fontSize: "16px" }}>
+                      No requests in this category
+                    </h3>
+                    <p style={{ margin: "8px auto 0", maxWidth: "380px", color: COLORS.muted, fontSize: "12px" }}>
+                      Browse available donations and send a request to start receiving surplus meals.
+                    </p>
+                  </div>
+                ) : (
+                  filteredNGOOrders.map((order) => {
+                    const activeStep = getTimelineIndex(order.status);
+                    return (
+                      <div className="order-item" key={order.id}>
+                        <div className="order-top">
+                          <h3 className="order-name">🍱 {order.foodRequested || order.foodName || "Meal Box"}</h3>
+                          <span className={`status-pill ${getStatusClass(order.status)}`}>
+                            {order.status}
+                          </span>
+                        </div>
+
+                        <div className="order-details">
+                          <span>👥 {order.expectedPeople || order.quantity || 10} servings</span>
+                          <span>🕒 {order.orderTime ? new Date(order.orderTime).toLocaleDateString() : "Recently"}</span>
+                          {order.prepTime && <span>📍 Pickup: {order.prepTime}</span>}
+                          {order.donorName && <span>🏢 Donor: {order.donorName}</span>}
+                        </div>
+
+                        <div className="timeline">
+                          {["Requested", "Accepted", "Preparing", "Ready", "Pickup", "Done"].map((label, index) => (
+                            <React.Fragment key={label}>
+                              <div className="timeline-step">
+                                <div className={`timeline-dot ${index <= activeStep ? "active" : ""}`} title={label}>
+                                  {index < activeStep ? "✓" : index === activeStep ? "•" : ""}
+                                </div>
+                              </div>
+                              {index < 5 && (
+                                <div className={`timeline-line ${index < activeStep ? "active" : ""}`} />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* =====================================================
+              4. ORDER HISTORY PAGE
+              ===================================================== */}
+          {isHistory && (
+            <section className="section">
+              <div className="section-header">
+                <div>
+                  <div className="section-kicker">Past Deliveries</div>
+                  <h2 className="section-title">Order History</h2>
+                  <p className="section-description">
+                    Review completed donations and past distribution receipts.
+                  </p>
+                </div>
+                <div className="section-count">{completedOrderHistory.length} Completed</div>
+              </div>
+
+              <div className="orders-card">
+                {completedOrderHistory.length === 0 ? (
+                  <div style={{ padding: "40px 10px", textAlign: "center" }}>
+                    <div className="empty-icon">📜</div>
+                    <h3 style={{ margin: 0, color: COLORS.navy, fontSize: "16px" }}>
+                      No completed orders yet
+                    </h3>
+                    <p style={{ margin: "8px auto 0", maxWidth: "380px", color: COLORS.muted, fontSize: "12px" }}>
+                      Once food requests are marked as delivered or picked up, they will be archived here.
+                    </p>
+                  </div>
+                ) : (
+                  completedOrderHistory.map((order) => (
+                    <div className="order-item" key={order.id} style={{ borderLeft: `4px solid ${COLORS.emerald}` }}>
+                      <div className="order-top">
+                        <h3 className="order-name">✓ {order.foodRequested || "Cooked Meals"}</h3>
+                        <span className="status-pill status-completed">Completed</span>
+                      </div>
+                      <div className="order-details">
+                        <span>👥 {order.expectedPeople || 20} meals served</span>
+                        <span>📅 Completed on {order.orderTime ? new Date(order.orderTime).toLocaleDateString() : "Today"}</span>
+                        <span>🏢 Donor: {order.donorName || "Local Partner Kitchen"}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* =====================================================
+              5. DELIVERY TRACKING PAGE
+              ===================================================== */}
+          {isDelivery && (
+            <section className="section">
+              <div className="section-header">
+                <div>
+                  <div className="section-kicker">Live Logistics</div>
+                  <h2 className="section-title">Delivery Tracking</h2>
+                  <p className="section-description">
+                    Track live status of incoming food pickups and volunteer dispatches.
+                  </p>
+                </div>
+                <div className="section-count">{activeDeliveries.length} Active</div>
+              </div>
+
+              {activeDeliveries.length === 0 ? (
+                <div className="module-card" style={{ textAlign: "center", padding: "48px 20px" }}>
+                  <div className="empty-icon" style={{ fontSize: "36px", marginBottom: "12px" }}>🚚</div>
+                  <h3 style={{ margin: "0 0 8px", color: COLORS.navy, fontSize: "18px" }}>No active deliveries right now</h3>
+                  <p style={{ color: COLORS.muted, fontSize: "13px", maxWidth: "420px", margin: "0 auto" }}>
+                    When a donor accepts your request and dispatches food, real-time tracking will show here.
+                  </p>
+                </div>
+              ) : (
+                activeDeliveries.map((order) => (
+                  <div className="module-card" key={order.id}>
+                    <div className="module-header">
+                      <div>
+                        <div style={{ color: COLORS.emerald, fontSize: "11px", fontWeight: 900, textTransform: "uppercase" }}>
+                          LIVE DISPATCH
+                        </div>
+                        <h3 style={{ margin: "4px 0", color: COLORS.navy, fontSize: "18px" }}>
+                          🍱 {order.foodRequested || "Surplus Food Rescue"}
+                        </h3>
+                      </div>
+                      <span className="status-pill status-preparing">In Transit</span>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", margin: "16px 0", padding: "16px", background: COLORS.soft, borderRadius: "14px" }}>
+                      <div>
+                        <small style={{ color: COLORS.muted, display: "block", fontSize: "11px", fontWeight: 700 }}>PICKUP LOCATION</small>
+                        <strong style={{ color: COLORS.navy, fontSize: "13px" }}>{order.prepTime || "Community Kitchen Central"}</strong>
+                      </div>
+                      <div>
+                        <small style={{ color: COLORS.muted, display: "block", fontSize: "11px", fontWeight: 700 }}>ESTIMATED ARRIVAL</small>
+                        <strong style={{ color: COLORS.emerald, fontSize: "13px" }}>~25-35 Minutes</strong>
+                      </div>
+                      <div>
+                        <small style={{ color: COLORS.muted, display: "block", fontSize: "11px", fontWeight: 700 }}>VOLUNTEER COURIER</small>
+                        <strong style={{ color: COLORS.navy, fontSize: "13px" }}>MealBridge Dispatcher #402</strong>
+                      </div>
+                    </div>
+
+                    <div className="timeline" style={{ marginTop: "20px" }}>
+                      {["Dispatched", "Picked Up", "En Route", "Delivered"].map((st, i) => (
+                        <React.Fragment key={st}>
+                          <div className="timeline-step">
+                            <div className={`timeline-dot ${i <= 2 ? "active" : ""}`}>
+                              {i < 2 ? "✓" : i === 2 ? "•" : ""}
+                            </div>
+                          </div>
+                          {i < 3 && <div className={`timeline-line ${i < 2 ? "active" : ""}`} />}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </section>
+          )}
+
+          {/* =====================================================
+              6. NOTIFICATIONS PAGE
+              ===================================================== */}
+          {isNotifications && (
+            <section className="section">
+              <div className="section-header">
+                <div>
+                  <div className="section-kicker">Alert Center</div>
+                  <h2 className="section-title">Notifications & Rescue Alerts</h2>
+                  <p className="section-description">
+                    Stay informed on new surplus food nearby and delivery status changes.
+                  </p>
+                </div>
+                <div className="section-count">Live Feed</div>
+              </div>
+
+              <div>
+                {[
+                  {
+                    id: 1,
+                    icon: "🍱",
+                    title: "New Surplus Food Available Nearby",
+                    text: "Fresh Bites Catering listed 25 meal boxes ready for immediate pickup (2.4 km away).",
+                    time: "10 mins ago",
+                    unread: true,
+                  },
+                  {
+                    id: 2,
+                    icon: "✓",
+                    title: "Food Request Accepted",
+                    text: "Your request for 15 servings of Cooked Meals was accepted by the donor.",
+                    time: "1 hour ago",
+                    unread: true,
+                  },
+                  {
+                    id: 3,
+                    icon: "🚚",
+                    title: "Volunteer Courier Assigned",
+                    text: "Volunteer driver #402 is on the way to pick up donation order #204.",
+                    time: "3 hours ago",
+                    unread: false,
+                  },
+                  {
+                    id: 4,
+                    icon: "⭐",
+                    title: "Organization Verification Active",
+                    text: "Your organization credentials have been verified for priority donation matching.",
+                    time: "1 day ago",
+                    unread: false,
+                  },
+                ].map((n) => (
+                  <div key={n.id} className={`notif-item ${n.unread ? "notif-unread" : ""}`}>
+                    <div className="notif-icon">{n.icon}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <strong style={{ color: COLORS.navy, fontSize: "14px" }}>{n.title}</strong>
+                        <small style={{ color: COLORS.muted, fontSize: "11px" }}>{n.time}</small>
+                      </div>
+                      <p style={{ margin: 0, color: COLORS.muted, fontSize: "12px", lineHeight: 1.5 }}>
+                        {n.text}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* =====================================================
+              7. ORGANIZATION PROFILE & VERIFICATION PAGE
+              ===================================================== */}
+          {isProfile && (
+            <section className="section">
+              <div className="section-header">
+                <div>
+                  <div className="section-kicker">NGO Credentials</div>
+                  <h2 className="section-title">Organization Profile & Verification</h2>
+                  <p className="section-description">
+                    Manage your organization identity, verification status, and serving capacity.
+                  </p>
+                </div>
+                <div className="verified-chip">
+                  <span className="verified-check">✓</span>
+                  {isOrgRegistered ? "Verified NGO" : "Profile Active"}
+                </div>
+              </div>
+
+              {/* Status Overview Card */}
+              <div className="module-card" style={{ marginBottom: "24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "18px", marginBottom: "20px", flexWrap: "wrap" }}>
+                  <div style={{ width: "64px", height: "64px", borderRadius: "18px", background: `linear-gradient(135deg, ${COLORS.emerald}, ${COLORS.mint})`, display: "grid", placeItems: "center", color: "white", fontSize: "28px", fontWeight: 900 }}>
+                    🏛️
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, color: COLORS.navy, fontSize: "20px" }}>
+                      {orgName || orgDetails?.orgName || "City Hope Kitchen"}
+                    </h3>
+                    <div style={{ color: COLORS.muted, fontSize: "13px", marginTop: "3px" }}>
+                      {orgType || orgDetails?.orgType || "Non-Profit Community Kitchen"} · Reg: {regNum || orgDetails?.regNum || "NGO-88219-IND"}
+                    </div>
+                  </div>
+                  <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+                    <span className="status-pill status-success">
+                      ✓ Food Safety Compliant
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
+                  <div style={{ padding: "16px", borderRadius: "12px", background: COLORS.soft, border: `1px solid ${COLORS.border}` }}>
+                    <small style={{ color: COLORS.muted, fontSize: "11px", fontWeight: 700 }}>PRIMARY CONTACT</small>
+                    <div style={{ color: COLORS.navy, fontWeight: 800, marginTop: "4px" }}>
+                      {contactName || orgDetails?.contactName || user?.fullName || "Director Coordinator"}
+                    </div>
+                    <div style={{ color: COLORS.muted, fontSize: "12px" }}>
+                      {email || orgDetails?.email || user?.primaryEmailAddress?.emailAddress || "contact@cityhope.org"}
+                    </div>
                   </div>
 
-                  <h3 className="org-name">
-                    {orgDetails?.orgName ||
-                      "City Hope Kitchen"}
+                  <div style={{ padding: "16px", borderRadius: "12px", background: COLORS.soft, border: `1px solid ${COLORS.border}` }}>
+                    <small style={{ color: COLORS.muted, fontSize: "11px", fontWeight: 700 }}>DROP-OFF ADDRESS</small>
+                    <div style={{ color: COLORS.navy, fontWeight: 800, marginTop: "4px" }}>
+                      {address || orgDetails?.address || "Building 4, Community Rescue Hub"}
+                    </div>
+                    <div style={{ color: COLORS.muted, fontSize: "12px" }}>
+                      {city || orgDetails?.city || "New Delhi"}, PIN {pinCode || orgDetails?.pinCode || "110001"}
+                    </div>
+                  </div>
+
+                  <div style={{ padding: "16px", borderRadius: "12px", background: COLORS.soft, border: `1px solid ${COLORS.border}` }}>
+                    <small style={{ color: COLORS.muted, fontSize: "11px", fontWeight: 700 }}>DAILY SERVING CAPACITY</small>
+                    <div style={{ color: COLORS.emerald, fontWeight: 900, fontSize: "18px", marginTop: "4px" }}>
+                      {dailyServed || orgDetails?.dailyServed || 150} People / Day
+                    </div>
+                    <div style={{ color: COLORS.muted, fontSize: "12px" }}>
+                      Verified Food Rescue Partner
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Full Interactive Profile Edit Form */}
+              <div className="module-card">
+                <h3 style={{ margin: "0 0 18px", color: COLORS.navy, fontSize: "16px" }}>
+                  Edit NGO Profile & Verification Details
+                </h3>
+
+                <form onSubmit={handleSaveProfileFromPage}>
+                  <div className="form-grid">
+                    <div className="field full">
+                      <label>Organization Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={orgName || orgDetails?.orgName || ""}
+                        onChange={(e) => setOrgName(e.target.value)}
+                        placeholder="e.g. City Hope Kitchen"
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>Organization Type *</label>
+                      <select
+                        value={orgType}
+                        onChange={(e) => setOrgType(e.target.value)}
+                      >
+                        <option value="NGO">NGO / Non-Profit</option>
+                        <option value="Shelter">Shelter Home</option>
+                        <option value="Orphanage">Orphanage</option>
+                        <option value="Community Kitchen">Community Kitchen</option>
+                        <option value="Relief Foundation">Relief Foundation</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div className="field">
+                      <label>NGO Registration / Darpan ID / 80G No. *</label>
+                      <input
+                        type="text"
+                        required
+                        value={regNum || orgDetails?.regNum || ""}
+                        onChange={(e) => setRegNum(e.target.value)}
+                        placeholder="e.g. NGO-88219-IND"
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>Primary Contact Person *</label>
+                      <input
+                        type="text"
+                        required
+                        value={contactName || orgDetails?.contactName || ""}
+                        onChange={(e) => setContactName(e.target.value)}
+                        placeholder="Coordinator Name"
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>Contact Phone Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        value={phone || orgDetails?.phone || ""}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+91 9876543210"
+                      />
+                    </div>
+
+                    <div className="field full">
+                      <label>Contact Email Address *</label>
+                      <input
+                        type="email"
+                        required
+                        value={email || orgDetails?.email || ""}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="contact@org.org"
+                      />
+                    </div>
+
+                    <div className="field full">
+                      <label>Official Drop-off / Receiving Address *</label>
+                      <textarea
+                        rows={2}
+                        required
+                        value={address || orgDetails?.address || ""}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Full street address for courier delivery..."
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>City *</label>
+                      <input
+                        type="text"
+                        required
+                        value={city || orgDetails?.city || ""}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder="New Delhi"
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>State *</label>
+                      <input
+                        type="text"
+                        required
+                        value={stateName || orgDetails?.state || ""}
+                        onChange={(e) => setStateName(e.target.value)}
+                        placeholder="Delhi"
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>PIN Code *</label>
+                      <input
+                        type="text"
+                        required
+                        value={pinCode || orgDetails?.pinCode || ""}
+                        onChange={(e) => setPinCode(e.target.value)}
+                        placeholder="110001"
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>Daily Serving Capacity (People/Day) *</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={dailyServed || orgDetails?.dailyServed || 150}
+                        onChange={(e) => setDailyServed(Number(e.target.value))}
+                      />
+                    </div>
+
+                    <div className="field full">
+                      <label>Verification Document / Registration Certificate</label>
+                      <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                        <input
+                          type="file"
+                          id="ngo-doc-upload"
+                          style={{ display: "none" }}
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setUploadedDocName(e.target.files[0].name);
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor="ngo-doc-upload"
+                          className="action-button"
+                          style={{
+                            background: "white",
+                            color: COLORS.navy,
+                            border: `1px solid ${COLORS.border}`,
+                            padding: "9px 15px",
+                            fontSize: "12px",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
+                        >
+                          📎 {uploadedDocName ? "Replace Document" : "Upload Document"}
+                        </label>
+                        <span style={{ fontSize: "12px", color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {uploadedDocName || "No certificate attached"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "24px", paddingTop: "16px", borderTop: `1px solid ${COLORS.border}` }}>
+                    <button
+                      type="submit"
+                      disabled={isSavingNgoProfile}
+                      className="register-button"
+                      style={{ cursor: isSavingNgoProfile ? "not-allowed" : "pointer" }}
+                    >
+                      {isSavingNgoProfile ? "Saving Profile..." : "Save Profile & Update Verification →"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </section>
+          )}
+
+          {/* =====================================================
+              8. IMPACT STATS PAGE
+              ===================================================== */}
+          {isImpact && (
+            <section className="section">
+              <div className="section-header">
+                <div>
+                  <div className="section-kicker">Impact Analytics</div>
+                  <h2 className="section-title">Community Impact & Sustainability</h2>
+                  <p className="section-description">
+                    Measure meals distributed, carbon emissions saved, and community reach.
+                  </p>
+                </div>
+                <div className="section-count">Verified Stats</div>
+              </div>
+
+              <div className="impact-grid" style={{ marginBottom: "24px" }}>
+                <div className="impact-card">
+                  <span className="impact-trend">TOTAL</span>
+                  <div className="impact-icon">🍱</div>
+                  <div className="impact-value">{(totalServings + 120).toLocaleString()}</div>
+                  <div className="impact-label">Total Meals Rescued</div>
+                </div>
+
+                <div className="impact-card">
+                  <span className="impact-trend">REACH</span>
+                  <div className="impact-icon">👥</div>
+                  <div className="impact-value">{(peopleServed + 85).toLocaleString()}</div>
+                  <div className="impact-label">People Nourished</div>
+                </div>
+
+                <div className="impact-card">
+                  <span className="impact-trend">ECO</span>
+                  <div className="impact-icon">🌱</div>
+                  <div className="impact-value">~180 kg</div>
+                  <div className="impact-label">CO2 Emissions Saved</div>
+                </div>
+
+                <div className="impact-card">
+                  <span className="impact-trend">SCORE</span>
+                  <div className="impact-icon">⭐</div>
+                  <div className="impact-value">98.5%</div>
+                  <div className="impact-label">Receiver Reliability</div>
+                </div>
+              </div>
+
+              <div className="module-card">
+                <h3 style={{ margin: "0 0 12px", color: COLORS.navy, fontSize: "16px" }}>
+                  📊 Distribution Summary
+                </h3>
+                <p style={{ color: COLORS.muted, fontSize: "13px", lineHeight: 1.6, margin: 0 }}>
+                  By rescuing surplus food through MealBridge, your organization prevents edible meals
+                  from landfill disposal, helping reduce greenhouse gas emissions while directly supporting
+                  families in need across the community.
+                </p>
+              </div>
+            </section>
+          )}
+
+          {/* =====================================================
+              9. SUPPORT & HELP PAGE
+              ===================================================== */}
+          {isSupport && (
+            <section className="section">
+              <div className="section-header">
+                <div>
+                  <div className="section-kicker">Help Center</div>
+                  <h2 className="section-title">Support & FAQ</h2>
+                  <p className="section-description">
+                    Frequently asked questions, food safety guides, and receiver assistance.
+                  </p>
+                </div>
+                <div className="section-count">24/7 Assistance</div>
+              </div>
+
+              {/* HELPLINE BANNER */}
+              <div className="module-card" style={{ background: `linear-gradient(135deg, ${COLORS.navy}, ${COLORS.navy2})`, color: "white", marginBottom: "20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+                  <div>
+                    <span style={{ color: COLORS.mint, fontSize: "11px", fontWeight: 900, textTransform: "uppercase" }}>
+                      EMERGENCY NGO HELPLINE
+                    </span>
+                    <h3 style={{ margin: "6px 0 0", fontSize: "20px", color: "white" }}>
+                      📞 +91 1800-MEAL-BRIDGE (Toll Free)
+                    </h3>
+                    <p style={{ margin: "4px 0 0", color: "#A0AEC0", fontSize: "12px" }}>
+                      Direct assistance for urgent food collections and courier inquiries.
+                    </p>
+                  </div>
+                  <a
+                    href="mailto:support@mealbridge.org"
+                    className="register-button"
+                    style={{ textDecoration: "none" }}
+                  >
+                    Email Support Desk →
+                  </a>
+                </div>
+              </div>
+
+              {/* TICKET CREATED BANNER */}
+              {receiverSubmittedTicket && (
+                <div
+                  className="module-card"
+                  style={{
+                    background: "#ECFDF5",
+                    border: `1px solid rgba(22,160,133,0.3)`,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "12px",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <div>
+                    <div style={{ color: COLORS.emerald, fontWeight: 900, fontSize: "14px" }}>
+                      ✓ Support Ticket #{receiverSubmittedTicket.id} Created
+                    </div>
+                    <div style={{ color: COLORS.muted, fontSize: "12px", marginTop: "3px" }}>
+                      Category: <strong>{receiverSubmittedTicket.category}</strong> · Response ETA: &lt;15 mins
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setReceiverSubmittedTicket(null)}
+                    style={{
+                      background: "none",
+                      border: `1px solid ${COLORS.emerald}`,
+                      color: COLORS.emerald,
+                      padding: "6px 14px",
+                      borderRadius: "8px",
+                      fontSize: "11px",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
+              {/* SUPPORT GRID: TICKET FORM + FAQ */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" }}>
+                {/* Support Request Form */}
+                <div className="module-card">
+                  <h3 style={{ margin: "0 0 16px", color: COLORS.navy, fontSize: "16px" }}>
+                    Submit a Support Ticket
                   </h3>
 
-                  <div className="org-type">
-                    {orgDetails?.orgType ||
-                      "Community Receiver"}
-                  </div>
-
-                  <div className="org-divider" />
-
-                  <div className="org-stats">
-                    <div className="org-stat">
-                      <strong>
-                        {peopleServed}
-                      </strong>
-                      <span>
-                        PEOPLE SERVED
-                      </span>
+                  <form onSubmit={handleReceiverTicketSubmit}>
+                    <div className="field" style={{ marginBottom: "14px" }}>
+                      <label>Assistance Category *</label>
+                      <select
+                        value={receiverTicketCategory}
+                        onChange={(e) => setReceiverTicketCategory(e.target.value)}
+                      >
+                        <option value="Urgent Delivery Assistance">Urgent Delivery / Courier Assistance</option>
+                        <option value="Food Quality & Safety Concern">Food Quality & Safety Escalation</option>
+                        <option value="Request Cancellation / Change">Request Cancellation / Change</option>
+                        <option value="NGO Verification & Capacity">NGO Verification & Capacity Update</option>
+                        <option value="General Technical Support">General Technical Support</option>
+                      </select>
                     </div>
 
-                    <div className="org-stat">
-                      <strong>
-                        {myNGOOrders.length}
-                      </strong>
-                      <span>
-                        REQUESTS
-                      </span>
+                    <div className="field" style={{ marginBottom: "14px" }}>
+                      <label>Subject / Order Ref *</label>
+                      <input
+                        type="text"
+                        required
+                        value={receiverTicketSubject}
+                        onChange={(e) => setReceiverTicketSubject(e.target.value)}
+                        placeholder="e.g. Courier delay for 25 meal boxes"
+                      />
                     </div>
 
-                    <div className="org-stat">
-                      <strong>
-                        {completedOrders}
-                      </strong>
-                      <span>
-                        COMPLETED
-                      </span>
+                    <div className="field" style={{ marginBottom: "14px" }}>
+                      <label>Priority Level</label>
+                      <select
+                        value={receiverTicketPriority}
+                        onChange={(e) => setReceiverTicketPriority(e.target.value)}
+                      >
+                        <option value="Normal">Normal — standard question</option>
+                        <option value="High">High — active food pickup scheduled</option>
+                        <option value="Urgent">Urgent / Emergency — immediate courier intervention</option>
+                      </select>
                     </div>
-                  </div>
 
-                  <div className="trust-row">
-                    <span className="trust-stars">
-                      ★★★★★
-                    </span>
+                    <div className="field" style={{ marginBottom: "18px" }}>
+                      <label>Message Description *</label>
+                      <textarea
+                        rows={4}
+                        required
+                        value={receiverTicketMessage}
+                        onChange={(e) => setReceiverTicketMessage(e.target.value)}
+                        placeholder="Describe your question or issue in detail..."
+                      />
+                    </div>
 
-                    <span className="trust-text">
-                      Community partner
-                    </span>
-                  </div>
-
-                  {!isOrgRegistered && (
                     <button
+                      type="submit"
+                      disabled={isSubmittingReceiverTicket}
                       className="register-button"
-                      style={{
-                        width: "100%",
-                        marginTop: "17px",
-                      }}
-                      onClick={() =>
-                        setIsRegisterModalOpen(
-                          true
-                        )
-                      }
+                      style={{ width: "100%", cursor: isSubmittingReceiverTicket ? "not-allowed" : "pointer" }}
                     >
-                      Complete Organization
-                      Profile
+                      {isSubmittingReceiverTicket ? "Submitting Ticket..." : "Submit Support Ticket →"}
                     </button>
-                  )}
+                  </form>
+                </div>
+
+                {/* FAQ ACCORDION */}
+                <div className="module-card">
+                  <h3 style={{ margin: "0 0 16px", color: COLORS.navy, fontSize: "16px" }}>
+                    Frequently Asked Questions
+                  </h3>
+
+                  <div>
+                    {[
+                      {
+                        q: "How do I claim a surplus food listing?",
+                        a: "Go to the Browse / Matched Donations page, click on any live listing, review the food type, servings, and AI freshness rating, then click 'Request Food'.",
+                      },
+                      {
+                        q: "How does delivery work for NGO receivers?",
+                        a: "Donors or MealBridge volunteer couriers are dispatched as soon as the donor accepts your request. You can track courier ETA in the Delivery Tracking tab.",
+                      },
+                      {
+                        q: "What should I do if the food quality does not match?",
+                        a: "You can report quality issues directly through the order completion modal or contact our 24/7 helpline immediately for food safety escalation.",
+                      },
+                      {
+                        q: "How do I update our organization's serving capacity?",
+                        a: "Visit the Organization Profile page and edit your daily serving capacity and drop-off address directly.",
+                      },
+                    ].map((item, idx) => (
+                      <div key={idx} className="faq-card">
+                        <button
+                          type="button"
+                          className="faq-question"
+                          onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                        >
+                          <span>{item.q}</span>
+                          <span style={{ fontSize: "18px", color: COLORS.emerald }}>
+                            {openFaq === idx ? "−" : "+"}
+                          </span>
+                        </button>
+                        {openFaq === idx && (
+                          <div className="faq-answer">{item.a}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>

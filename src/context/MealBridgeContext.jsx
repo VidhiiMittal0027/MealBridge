@@ -563,6 +563,34 @@ export function MealBridgeProvider({ children }) {
     }
   };
 
+  const markNotificationAsRead = async (notificationId) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, unread: false } : n))
+    );
+    if (!user) return;
+    try {
+      await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("id", notificationId);
+    } catch (err) {
+      console.error("Error marking notification read:", err);
+    }
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+    if (!user) return;
+    try {
+      await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", user.id);
+    } catch (err) {
+      console.error("Error marking all read:", err);
+    }
+  };
+
   const clearNotifications = async (role) => {
     if (!user) return;
     try {
@@ -600,6 +628,8 @@ export function MealBridgeProvider({ children }) {
         updateOrderStatus,
         sendChatMessage,
         clearNotifications,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
       }}
     >
       {children}

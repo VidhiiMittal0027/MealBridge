@@ -14,6 +14,7 @@ export default function DashboardLayout({ children }) {
   const [role, setRole] = useState("donor");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   /* =========================================================
      ROLE
@@ -25,11 +26,26 @@ export default function DashboardLayout({ children }) {
     const storedRole = sessionStorage.getItem("mealbridge-role");
     const metadataRole = user?.unsafeMetadata?.role;
 
-    const activeRole = storedRole || metadataRole || "donor";
+    let activeRole = storedRole || metadataRole;
+    if (location.pathname.startsWith("/admin")) {
+      activeRole = "admin";
+    } else if (location.pathname.startsWith("/receiver") || location.pathname.startsWith("/ngo")) {
+      activeRole = "receiver";
+    } else if (
+      location.pathname.startsWith("/donor") ||
+      location.pathname.startsWith("/donate") ||
+      location.pathname.startsWith("/food-assessment")
+    ) {
+      activeRole = "donor";
+    } else if (location.pathname.startsWith("/delivery")) {
+      activeRole = "delivery";
+    } else if (!activeRole) {
+      activeRole = "donor";
+    }
 
     setRole(activeRole);
     sessionStorage.setItem("mealbridge-role", activeRole);
-  }, [user]);
+  }, [user, location.pathname]);
 
   /* =========================================================
      CLOSE MOBILE SIDEBAR WHEN ROUTE CHANGES
@@ -63,6 +79,13 @@ export default function DashboardLayout({ children }) {
   ========================================================= */
 
   const roleData = {
+    admin: {
+      title: "System Admin",
+      badge: "ADMIN",
+      icon: "🛡️",
+      dashboard: "/admin",
+    },
+
     donor: {
       title: "Food Donor",
       badge: "DONOR",
@@ -92,6 +115,65 @@ export default function DashboardLayout({ children }) {
   ========================================================= */
 
   const getLinks = () => {
+    if (role === "admin") {
+      return [
+        {
+          label: "Overview",
+          description: "System & metrics summary",
+          href: "/admin",
+          icon: "⌂",
+        },
+        {
+          label: "Pending NGO Verifications",
+          description: "Review Darpan & 80G",
+          href: "/admin/verifications-ngo",
+          icon: "🏛️",
+        },
+        {
+          label: "Pending Donor Verifications",
+          description: "Review FSSAI licenses",
+          href: "/admin/verifications-donor",
+          icon: "🍱",
+        },
+        {
+          label: "All Donations",
+          description: "Moderate food listings",
+          href: "/admin/donations",
+          icon: "🍲",
+        },
+        {
+          label: "Orders & Disputes",
+          description: "Disputes & resolutions",
+          href: "/admin/orders-disputes",
+          icon: "⚖️",
+        },
+        {
+          label: "Delivery Agents",
+          description: "Fleet & volunteer roster",
+          href: "/admin/delivery-agents",
+          icon: "🚚",
+        },
+        {
+          label: "Flagged/Suspended Users",
+          description: "Trust scores & probation",
+          href: "/admin/flagged-users",
+          icon: "⛔",
+        },
+        {
+          label: "Reports & Analytics",
+          description: "Platform growth metrics",
+          href: "/admin/analytics",
+          icon: "📊",
+        },
+        {
+          label: "Settings",
+          description: "Thresholds & audit log",
+          href: "/admin/settings",
+          icon: "⚙️",
+        },
+      ];
+    }
+
     if (role === "donor") {
       return [
         {
@@ -101,16 +183,52 @@ export default function DashboardLayout({ children }) {
           icon: "⌂",
         },
         {
-          label: "List Surplus",
-          description: "Share excess food",
-          href: "/donate-food",
+          label: "My Listings",
+          description: "Manage food listings",
+          href: "/donor-dashboard/listings",
           icon: "＋",
         },
         {
-          label: "Impact Tracker",
-          description: "See your impact",
-          href: "/impact-dashboard",
-          icon: "✦",
+          label: "Incoming NGO Requests",
+          description: "Review requests",
+          href: "/donor-dashboard/requests",
+          icon: "◈",
+        },
+        {
+          label: "Order History",
+          description: "Past donations",
+          href: "/donor-dashboard/history",
+          icon: "◷",
+        },
+        {
+          label: "Delivery Status",
+          description: "Track active deliveries",
+          href: "/donor-dashboard/delivery",
+          icon: "🚚",
+        },
+        {
+          label: "Notifications",
+          description: "Updates and alerts",
+          href: "/donor-dashboard/notifications",
+          icon: "🔔",
+        },
+        {
+          label: "Trust & Rating",
+          description: "Your donor score",
+          href: "/donor-dashboard/trust",
+          icon: "⭐",
+        },
+        {
+          label: "Profile & Verification",
+          description: "Manage your profile",
+          href: "/donor-dashboard/profile",
+          icon: "👤",
+        },
+        {
+          label: "Support & Help",
+          description: "Get assistance",
+          href: "/donor-dashboard/support",
+          icon: "❓",
         },
       ];
     }
@@ -119,21 +237,57 @@ export default function DashboardLayout({ children }) {
       return [
         {
           label: "Overview",
-          description: "Your food requests",
+          description: "Nearby food & requests",
           href: "/receiver-dashboard",
           icon: "⌂",
         },
         {
-          label: "Available Food",
+          label: "Browse / Matched",
           description: "Find available meals",
-          href: "/ngo-matching",
-          icon: "◈",
+          href: "/receiver-dashboard/browse",
+          icon: "🍱",
         },
         {
-          label: "Impact Tracker",
-          description: "See your impact",
-          href: "/impact-dashboard",
-          icon: "✦",
+          label: "My Requests",
+          description: "Sent, Pending & Accepted",
+          href: "/receiver-dashboard/requests",
+          icon: "📩",
+        },
+        {
+          label: "Order History",
+          description: "Past & completed donations",
+          href: "/receiver-dashboard/history",
+          icon: "◷",
+        },
+        {
+          label: "Delivery Tracking",
+          description: "Incoming pickups & ETA",
+          href: "/receiver-dashboard/delivery",
+          icon: "🚚",
+        },
+        {
+          label: "Notifications",
+          description: "Updates & rescue alerts",
+          href: "/receiver-dashboard/notifications",
+          icon: "🔔",
+        },
+        {
+          label: "Org Profile & Status",
+          description: "Verification & details",
+          href: "/receiver-dashboard/profile",
+          icon: "🏛️",
+        },
+        {
+          label: "Impact Stats",
+          description: "Meals & people served",
+          href: "/receiver-dashboard/impact",
+          icon: "📊",
+        },
+        {
+          label: "Support / Help",
+          description: "Assistance & guides",
+          href: "/receiver-dashboard/support",
+          icon: "❓",
         },
       ];
     }
@@ -141,15 +295,57 @@ export default function DashboardLayout({ children }) {
     return [
       {
         label: "Overview",
-        description: "Your delivery activity",
-        href: "/delivery-dashboard",
+        description: "System & metrics summary",
+        href: "/admin",
         icon: "⌂",
       },
       {
-        label: "Impact Tracker",
-        description: "See your impact",
-        href: "/impact-dashboard",
-        icon: "✦",
+        label: "Pending NGO Verifications",
+        description: "Review Darpan & 80G",
+        href: "/admin/verifications-ngo",
+        icon: "🏛️",
+      },
+      {
+        label: "Pending Donor Verifications",
+        description: "Review FSSAI licenses",
+        href: "/admin/verifications-donor",
+        icon: "🍱",
+      },
+      {
+        label: "All Donations",
+        description: "Moderate food listings",
+        href: "/admin/donations",
+        icon: "🍲",
+      },
+      {
+        label: "Orders & Disputes",
+        description: "Disputes & resolutions",
+        href: "/admin/orders-disputes",
+        icon: "⚖️",
+      },
+      {
+        label: "Delivery Agents",
+        description: "Fleet & volunteer roster",
+        href: "/admin/delivery-agents",
+        icon: "🚚",
+      },
+      {
+        label: "Flagged/Suspended Users",
+        description: "Trust scores & probation",
+        href: "/admin/flagged-users",
+        icon: "⛔",
+      },
+      {
+        label: "Reports & Analytics",
+        description: "Platform growth metrics",
+        href: "/admin/analytics",
+        icon: "📊",
+      },
+      {
+        label: "Settings",
+        description: "Thresholds & audit log",
+        href: "/admin/settings",
+        icon: "⚙️",
       },
     ];
   };
@@ -242,18 +438,17 @@ export default function DashboardLayout({ children }) {
 
         .mb-dashboard-shell {
           width: 100%;
-
           max-width: 1480px;
-
           margin: 0 auto;
-
           display: grid;
-
           grid-template-columns: 270px minmax(0, 1fr);
-
           gap: 26px;
-
           padding: 28px 28px 40px;
+          transition: grid-template-columns 0.3s ease;
+        }
+
+        .mb-dashboard-shell.collapsed {
+          grid-template-columns: 85px minmax(0, 1fr);
         }
 
 
@@ -288,9 +483,32 @@ export default function DashboardLayout({ children }) {
 
           box-shadow:
             0 20px 55px rgba(7, 30, 45, 0.08);
-
           backdrop-filter:
             blur(20px);
+          transition: width 0.3s ease;
+        }
+
+        .mb-sidebar.collapsed .mb-user-info,
+        .mb-sidebar.collapsed .mb-nav-title,
+        .mb-sidebar.collapsed .mb-nav-text,
+        .mb-sidebar.collapsed .mb-nav-description {
+          display: none;
+        }
+
+        .mb-sidebar.collapsed .mb-profile {
+          flex-direction: column;
+          justify-content: center;
+          padding: 24px 10px;
+        }
+
+        .mb-sidebar.collapsed .mb-nav-link,
+        .mb-sidebar.collapsed .mb-logout {
+          justify-content: center;
+          padding: 12px;
+        }
+
+        .mb-sidebar.collapsed .mb-nav-icon {
+          margin: 0;
         }
 
 
@@ -455,9 +673,19 @@ export default function DashboardLayout({ children }) {
 
         .mb-nav {
           flex: 1;
+          padding: 22px 13px;
+          overflow-y: auto;
+        }
 
-          padding:
-            22px 13px;
+        .mb-nav::-webkit-scrollbar {
+          width: 4px;
+        }
+        .mb-nav::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .mb-nav::-webkit-scrollbar-thumb {
+          background: rgba(7, 20, 38, 0.1);
+          border-radius: 4px;
         }
 
 
@@ -1529,6 +1757,38 @@ export default function DashboardLayout({ children }) {
 
         }
 
+        @media (max-width: 1080px) {
+          .mb-dashboard-shell.collapsed {
+            grid-template-columns: 1fr;
+          }
+          
+          .mb-sidebar.collapsed {
+            width: 290px;
+          }
+          
+          .mb-sidebar.collapsed .mb-user-info,
+          .mb-sidebar.collapsed .mb-nav-title,
+          .mb-sidebar.collapsed .mb-nav-text,
+          .mb-sidebar.collapsed .mb-nav-description {
+            display: block;
+          }
+          
+          .mb-sidebar.collapsed .mb-profile {
+            flex-direction: row;
+            justify-content: flex-start;
+            padding: 24px 20px;
+          }
+          
+          .mb-sidebar.collapsed .mb-nav-link,
+          .mb-sidebar.collapsed .mb-logout {
+            justify-content: flex-start;
+            padding: 8px 12px;
+          }
+
+          .mb-profile button {
+            display: none !important;
+          }
+        }
       `}</style>
 
 
@@ -1569,7 +1829,7 @@ export default function DashboardLayout({ children }) {
           DASHBOARD
       ===================================================== */}
 
-      <div className="mb-dashboard-shell">
+      <div className={`mb-dashboard-shell ${isSidebarCollapsed ? "collapsed" : ""}`}>
 
 
         {/* ===================================================
@@ -1577,9 +1837,7 @@ export default function DashboardLayout({ children }) {
         =================================================== */}
 
         <aside
-          className={`mb-sidebar ${
-            mobileOpen ? "open" : ""
-          }`}
+          className={`mb-sidebar ${mobileOpen ? "open" : ""} ${isSidebarCollapsed ? "collapsed" : ""}`}
         >
 
           {/* PROFILE */}
@@ -1610,6 +1868,25 @@ export default function DashboardLayout({ children }) {
 
             </div>
 
+            <button 
+              type="button"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              style={{
+                marginLeft: isSidebarCollapsed ? 0 : 'auto',
+                marginTop: isSidebarCollapsed ? 10 : 0,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#08b486',
+                display: 'grid',
+                placeItems: 'center',
+                padding: '6px',
+                borderRadius: '8px',
+              }}
+              title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              {isSidebarCollapsed ? "▶" : "◀"}
+            </button>
           </div>
 
 
@@ -1633,6 +1910,7 @@ export default function DashboardLayout({ children }) {
                   className={`mb-nav-link ${
                     active ? "active" : ""
                   }`}
+                  title={isSidebarCollapsed ? link.label : ""}
                 >
 
                   <span className="mb-nav-icon">
@@ -1670,6 +1948,7 @@ export default function DashboardLayout({ children }) {
                 setIsLogoutConfirmOpen(true)
               }
               type="button"
+              title={isSidebarCollapsed ? "Log Out" : ""}
             >
 
               <span className="mb-nav-icon">

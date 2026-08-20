@@ -5,7 +5,7 @@ import React, {
   useState,
 } from "react";
 import { useUser } from "@clerk/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { MealBridgeContext } from "../context/MealBridgeContext";
 import DashboardLayout from "../components/DashboardLayout";
 
@@ -344,10 +344,23 @@ function ModalHeader({ eyebrow, title, onClose }) {
 export default function DonorDashboard() { 
   const { user } = useUser(); 
   const navigate = useNavigate(); 
+  const location = useLocation();
+
+  const currentPath = location.pathname.replace(/\/$/, "");
+  const isOverview = currentPath === "/donor-dashboard";
+  const isListings = currentPath === "/donor-dashboard/listings";
+  const isRequests = currentPath === "/donor-dashboard/requests";
+  const isHistory = currentPath === "/donor-dashboard/history";
+  const isDelivery = currentPath === "/donor-dashboard/delivery";
+  const isNotifications = currentPath === "/donor-dashboard/notifications";
+  const isTrust = currentPath === "/donor-dashboard/trust";
+  const isProfile = currentPath === "/donor-dashboard/profile";
+  const isSupport = currentPath === "/donor-dashboard/support";
  
   const { 
     donations, 
     orders, 
+    notifications,
     toast, 
     showToast, 
     registerFood, 
@@ -356,8 +369,95 @@ export default function DonorDashboard() {
     acceptOrder, 
     declineOrder, 
     updateOrderStatus, 
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
   } = useContext(MealBridgeContext); 
- 
+
+  /* ========================================================= 
+     NOTIFICATIONS & PROFILE VERIFICATION STATE 
+     ========================================================= */ 
+  const [notifFilter, setNotifFilter] = useState("all");
+  
+  // Profile verification state
+  const [profileBusinessName, setProfileBusinessName] = useState(
+    user?.unsafeMetadata?.businessName || user?.fullName || "Fresh Bites Catering"
+  );
+  const [profileDonorType, setProfileDonorType] = useState(
+    user?.unsafeMetadata?.donorType || "Restaurant & Catering"
+  );
+  const [profileContactPerson, setProfileContactPerson] = useState(
+    user?.unsafeMetadata?.contactPerson || user?.fullName || "Head Kitchen Manager"
+  );
+  const [profilePhone, setProfilePhone] = useState(
+    user?.unsafeMetadata?.contactPhone || "9876543210"
+  );
+  const [profileAddress, setProfileAddress] = useState(
+    user?.unsafeMetadata?.pickupAddress || "42 Connaught Place, Central Wing, New Delhi"
+  );
+  const [profileFssai, setProfileFssai] = useState(
+    user?.unsafeMetadata?.fssaiNumber || "FSSAI-11223344556677"
+  );
+  const [profileDocName, setProfileDocName] = useState(
+    user?.unsafeMetadata?.documentName || "fssai_food_safety_cert.pdf"
+  );
+  const [verificationStatus, setVerificationStatus] = useState(
+    user?.unsafeMetadata?.verificationStatus || "verified"
+  );
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  const handleSaveProfileVerification = async (e) => {
+    e.preventDefault();
+    setIsSavingProfile(true);
+    try {
+      if (user) {
+        await user.update({
+          unsafeMetadata: {
+            ...user.unsafeMetadata,
+            businessName: profileBusinessName,
+            donorType: profileDonorType,
+            contactPerson: profileContactPerson,
+            contactPhone: profilePhone,
+            pickupAddress: profileAddress,
+            fssaiNumber: profileFssai,
+            documentName: profileDocName,
+            verificationStatus: "verified",
+          },
+        });
+      }
+      setVerificationStatus("verified");
+      showToast("Profile and verification credentials updated successfully!", "success");
+    } catch (err) {
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const [donorTicketCategory, setDonorTicketCategory] = useState("Pickup Delay / Coordination");
+  const [donorTicketSubject, setDonorTicketSubject] = useState("");
+  const [donorTicketMessage, setDonorTicketMessage] = useState("");
+  const [donorTicketPriority, setDonorTicketPriority] = useState("High");
+  const [donorSubmittedTicket, setDonorSubmittedTicket] = useState(null);
+  const [isSubmittingDonorTicket, setIsSubmittingDonorTicket] = useState(false);
+
+  const handleDonorTicketSubmit = (e) => {
+    e.preventDefault();
+    setIsSubmittingDonorTicket(true);
+    setTimeout(() => {
+      const ticketId = `MB-DNR-${Math.floor(10000 + Math.random() * 90000)}`;
+      setDonorSubmittedTicket({
+        id: ticketId,
+        category: donorTicketCategory,
+        subject: donorTicketSubject,
+        time: "Just now",
+        priority: donorTicketPriority,
+      });
+      setIsSubmittingDonorTicket(false);
+      setDonorTicketSubject("");
+      setDonorTicketMessage("");
+      showToast(`Support ticket ${ticketId} created! Our team is reviewing it.`, "success");
+    }, 500);
+  };
+
   /* ========================================================= 
      MODALS 
      ========================================================= */ 
@@ -403,19 +503,9 @@ export default function DonorDashboard() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
 
- 
   const [prepTime, setPrepTime] = useState("30 Minutes"); 
   const [customPrepTime, setCustomPrepTime] = useState("");
 
-  /* =========================================================
-     CHAT / PARTNER MESSAGING
-     ========================================================= */
-
-  const [selectedChatId, setSelectedChatId] = useState(null);
-  const [chatInput, setChatInput] = useState("");
-  const [chatMessages, setChatMessages] = useState({});
-
- 
   /* ========================================================= 
      DATA 
      ========================================================= */ 
@@ -483,113 +573,6 @@ export default function DonorDashboard() {
       ? orders
       : demoOrders;
 
-  const chatPartners = useMemo(() => {
-    const seen = new Set();
-
-    return allOrders.reduce((list, order) => {
-      const name =
-        order.ngoName ||
-        order.receiverName ||
-        "City Hope Kitchen";
-      const key = String(order.id || name);
-
-      if (seen.has(key)) return list;
-      seen.add(key);
-
-      list.push({
-        id: key,
-        name,
-        food:
-          order.foodRequested ||
-          order.foodName ||
-          "Food donation",
-        order,
-      });
-
-      return list;
-    }, []);
-  }, [allOrders]);
-
-  const activeChatPartner = useMemo(() => {
-    if (chatPartners.length === 0) {
-      return {
-        id: "city-hope-kitchen",
-        name: "City Hope Kitchen",
-        food: "chapati",
-        order: null,
-      };
-    }
-
-    return (
-      chatPartners.find(
-        (partner) => partner.id === selectedChatId
-      ) || chatPartners[0]
-    );
-  }, [chatPartners, selectedChatId]);
-
-  useEffect(() => {
-    if (chatPartners.length && !selectedChatId) {
-      setSelectedChatId(chatPartners[0].id);
-    }
-  }, [chatPartners, selectedChatId]);
-
-  useEffect(() => {
-    if (
-      !activeChatPartner ||
-      chatMessages[activeChatPartner.id]
-    ) {
-      return;
-    }
-
-    const order = activeChatPartner.order;
-    const initial = [
-      {
-        id: `${activeChatPartner.id}-received-1`,
-        sender: "partner",
-        text:
-          order?.receiverMessage ||
-          "Received! Let me check the details and get back to you shortly.",
-        time: order?.orderTime
-          ? new Date(order.orderTime).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "19:33",
-      },
-    ];
-
-    setChatMessages((prev) => ({
-      ...prev,
-      [activeChatPartner.id]: initial,
-    }));
-  }, [activeChatPartner, chatMessages]);
-
-  const handleSendChat = () => {
-    const text = chatInput.trim();
-    if (!text || !activeChatPartner) return;
-
-    const message = {
-      id: `${Date.now()}-user`,
-      sender: "user",
-      text,
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    setChatMessages((prev) => ({
-      ...prev,
-      [activeChatPartner.id]: [
-        ...(prev[activeChatPartner.id] || []),
-        message,
-      ],
-    }));
-
-    setChatInput("");
-  };
- 
- 
   const incomingRequests = useMemo( 
     () => 
       allOrders.filter( 
@@ -696,7 +679,53 @@ export default function DonorDashboard() {
         Math.min(activeMeals, 100) * 0.2 
     ) 
   ); 
- 
+
+  /* ========================================================= 
+     NOTIFICATIONS COMPUTATION 
+     ========================================================= */ 
+  const donorNotifications = useMemo(() => {
+    let list = Array.isArray(notifications) && notifications.length > 0 ? [...notifications] : [];
+    
+    // If notifications array is empty, synthesize real-time notifications from active/recent orders
+    if (list.length === 0 && allOrders.length > 0) {
+      list = allOrders.map((o) => ({
+        id: `notif-order-${o.id}`,
+        title: o.status === "Pending" 
+          ? `New Request from ${o.ngoName || "NGO Receiver"}` 
+          : o.status === "Accepted" 
+          ? `Request Accepted: ${o.foodRequested}`
+          : `Donation Delivered: ${o.foodRequested}`,
+        message: `${o.expectedPeople || o.quantity || 10} servings requested for community distribution.`,
+        timestamp: o.orderTime || new Date().toISOString(),
+        type: o.status === "Pending" ? "info" : "success",
+        unread: o.status === "Pending",
+        targetId: o.id,
+        category: "requests",
+      }));
+      // Add a system verification notification
+      list.push({
+        id: "notif-system-1",
+        title: "Food Safety Verification Active",
+        message: "Your donor profile and FSSAI certification have been verified. Food listings receive priority NGO matching.",
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        type: "success",
+        unread: false,
+        category: "system",
+      });
+    }
+
+    return list.filter((n) => {
+      if (notifFilter === "unread") return n.unread;
+      if (notifFilter === "requests") return n.category === "requests" || n.title?.toLowerCase().includes("request") || n.title?.toLowerCase().includes("pickup");
+      if (notifFilter === "system") return n.category === "system" || n.title?.toLowerCase().includes("verification") || n.title?.toLowerCase().includes("safety");
+      return true;
+    });
+  }, [notifications, allOrders, notifFilter]);
+
+  const unreadNotifsCount = useMemo(() => {
+    return (notifications || []).filter((n) => n.unread).length;
+  }, [notifications]);
+
   /* ========================================================= 
      SESSION / ROLE PROTECTION 
      ========================================================= */ 
@@ -762,6 +791,8 @@ export default function DonorDashboard() {
     setIsAiLoading(false);
   }; 
  
+  const AI_API_URL = "http://127.0.0.1:8000";
+
   const handleRegisterSubmit = async (e) => { 
     e.preventDefault(); 
 
@@ -779,17 +810,50 @@ export default function DonorDashboard() {
     setIsAiLoading(true);
 
     try {
+      // 0. Check if AI server is reachable
+      try {
+        const healthCheck = await fetch(AI_API_URL + "/", {
+          method: "GET",
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!healthCheck.ok) {
+          throw new Error("AI server returned an error.");
+        }
+        const healthData = await healthCheck.json();
+        if (!healthData.model_loaded) {
+          throw new Error("AI model is not loaded on the server. Please restart the AI service.");
+        }
+      } catch (healthErr) {
+        if (healthErr.name === "TimeoutError" || healthErr.name === "AbortError") {
+          throw new Error(
+            "AI Assessment server is not responding. Please ensure the AI server is running:\n" +
+            "cd ai-model && python api/main.py"
+          );
+        }
+        if (healthErr.message === "Failed to fetch" || healthErr.name === "TypeError") {
+          throw new Error(
+            "Cannot connect to the AI Assessment server at " + AI_API_URL + ". " +
+            "Please start it by running: cd ai-model && pip install -r requirements.txt && python api/main.py"
+          );
+        }
+        throw healthErr;
+      }
+
       // 1. Run AI Assessment
       const formData = new FormData();
       formData.append("file", imageFile);
 
-      const aiResponse = await fetch("http://127.0.0.1:8000/predict-freshness", {
+      const aiResponse = await fetch(AI_API_URL + "/predict-freshness", {
         method: "POST",
         body: formData,
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!aiResponse.ok) {
-        throw new Error("AI assessment failed.");
+        const errorData = await aiResponse.json().catch(() => null);
+        throw new Error(
+          errorData?.detail || `AI assessment failed with status ${aiResponse.status}. Please try again.`
+        );
       }
 
       const aiData = await aiResponse.json();
@@ -803,7 +867,10 @@ export default function DonorDashboard() {
       showToast("AI Assessment complete! Please review and confirm.", "success");
     } catch (err) {
       setIsAiLoading(false);
-      showToast(err.message, "error");
+      const message = err.message === "Failed to fetch"
+        ? "Cannot connect to the AI Assessment server. Please ensure it is running at " + AI_API_URL
+        : err.message;
+      showToast(message, "error");
     }
   }; 
 
@@ -1025,6 +1092,784 @@ export default function DonorDashboard() {
             "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", 
         }} 
       > 
+        {/* ===================================================== 
+            ROUTE-BASED DISPLAY
+            ===================================================== */} 
+        <style>{`
+          ${!isOverview ? `
+            .dashboard-top-header,
+            .donor-hero-section,
+            .donor-kpi-grid,
+            .impact-summary-section,
+            #active-listings,
+            #incoming-requests,
+            #live-workflow,
+            .impact-strip,
+            #past-donations {
+              display: none !important;
+            }
+          ` : `
+            /* Overview shows everything except maybe specific detailed views if we want */
+            #past-donations { display: none !important; }
+          `}
+
+          ${isListings ? `
+            .dashboard-top-header, #active-listings { display: flex !important; }
+            #active-listings { display: block !important; }
+          ` : ''}
+
+          ${isRequests ? `
+            .dashboard-top-header, #incoming-requests { display: flex !important; }
+            #incoming-requests { display: block !important; }
+          ` : ''}
+
+          ${isHistory ? `
+            .dashboard-top-header, #past-donations { display: flex !important; }
+            #past-donations { display: block !important; }
+          ` : ''}
+
+          ${isDelivery ? `
+            .dashboard-top-header, #live-workflow { display: flex !important; }
+            #live-workflow { display: block !important; }
+          ` : ''}
+        `}</style>
+
+        {/* ===================================================== 
+            1. NOTIFICATIONS PAGE
+            ===================================================== */} 
+        {isNotifications && (
+          <div style={{ marginTop: 20 }}>
+            <SectionHeader
+              eyebrow="REAL-TIME UPDATES"
+              title="Notifications & Activity"
+              description="Stay notified on incoming requests, courier dispatches, and verification status."
+              action={
+                unreadNotifsCount > 0 && (
+                  <button
+                    onClick={markAllNotificationsAsRead}
+                    style={{
+                      ...buttonStyle,
+                      background: COLORS.white,
+                      color: COLORS.green,
+                      border: `1px solid ${COLORS.border}`,
+                      padding: "10px 16px",
+                      fontSize: 13,
+                      fontWeight: 800,
+                    }}
+                  >
+                    ✓ Mark All as Read
+                  </button>
+                )
+              }
+            />
+
+            {/* Filter Pills */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+              {[
+                { id: "all", label: "All Alerts", count: donorNotifications.length },
+                { id: "unread", label: "Unread", count: unreadNotifsCount },
+                { id: "requests", label: "Requests & Pickups" },
+                { id: "system", label: "System & Safety" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setNotifFilter(tab.id)}
+                  style={{
+                    padding: "8px 18px",
+                    borderRadius: 999,
+                    border: `1px solid ${notifFilter === tab.id ? COLORS.green : COLORS.border}`,
+                    background: notifFilter === tab.id ? COLORS.green : COLORS.white,
+                    color: notifFilter === tab.id ? COLORS.white : COLORS.text,
+                    fontWeight: 800,
+                    fontSize: 12,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  {tab.label} {tab.count !== undefined ? `(${tab.count})` : ""}
+                </button>
+              ))}
+            </div>
+
+            {/* Notification List */}
+            {donorNotifications.length === 0 ? (
+              <div style={{ ...cardStyle, padding: "48px 20px", textAlign: "center" }}>
+                <div style={{ fontSize: 38, marginBottom: 12 }}>🔔</div>
+                <h3 style={{ margin: "0 0 6px", color: COLORS.navy, fontSize: 18, fontWeight: 900 }}>
+                  No notifications in this filter
+                </h3>
+                <p style={{ margin: "0 auto", maxWidth: 380, color: COLORS.muted, fontSize: 12 }}>
+                  You're all caught up! New alerts and donation activity will appear here in real time.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {donorNotifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    style={{
+                      ...cardStyle,
+                      padding: "18px 20px",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 16,
+                      borderLeft: notif.unread ? `4px solid ${COLORS.green}` : `1px solid ${COLORS.border}`,
+                      background: notif.unread ? "#F7FBFA" : COLORS.white,
+                      transition: "transform 0.15s ease",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 12,
+                        background: COLORS.softGreen,
+                        color: COLORS.green,
+                        display: "grid",
+                        placeItems: "center",
+                        fontSize: 18,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {notif.type === "info" ? "📩" : notif.type === "success" ? "✓" : "🔔"}
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, flexWrap: "wrap", gap: 8 }}>
+                        <strong style={{ color: COLORS.navy, fontSize: 14, fontWeight: 900 }}>
+                          {notif.title}
+                        </strong>
+                        <span style={{ color: COLORS.muted, fontSize: 11, fontWeight: 700 }}>
+                          {notif.timestamp ? new Date(notif.timestamp).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Recently"}
+                        </span>
+                      </div>
+                      <p style={{ margin: "0 0 10px", color: COLORS.muted, fontSize: 12, lineHeight: 1.5 }}>
+                        {notif.message}
+                      </p>
+
+                      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                        {notif.unread && (
+                          <button
+                            onClick={() => markNotificationAsRead(notif.id)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: COLORS.green,
+                              fontSize: 11,
+                              fontWeight: 850,
+                              cursor: "pointer",
+                              padding: 0,
+                            }}
+                          >
+                            Mark as read
+                          </button>
+                        )}
+                        {notif.targetId && (
+                          <button
+                            onClick={() => navigate("/donor-dashboard/requests")}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: COLORS.navy,
+                              fontSize: 11,
+                              fontWeight: 850,
+                              cursor: "pointer",
+                              padding: 0,
+                            }}
+                          >
+                            View in Requests →
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===================================================== 
+            2. TRUST & RATING PAGE
+            ===================================================== */} 
+        {isTrust && (
+          <div style={{ marginTop: 20 }}>
+            <SectionHeader
+              eyebrow="COMMUNITY REPUTATION"
+              title="Trust Score & Ratings"
+              description="Your verified reliability score, food quality index, and receiver feedback."
+            />
+
+            {/* Top Metrics Row */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: 16,
+                marginBottom: 24,
+              }}
+            >
+              <div style={{ ...cardStyle, padding: 22, borderTop: `4px solid ${COLORS.green}` }}>
+                <span style={{ fontSize: 9, fontWeight: 900, color: COLORS.green, letterSpacing: ".15em", textTransform: "uppercase" }}>
+                  RELIABILITY SCORE
+                </span>
+                <div style={{ fontSize: 32, fontWeight: 950, color: COLORS.navy, margin: "6px 0 2px" }}>
+                  98.5%
+                </div>
+                <small style={{ color: COLORS.muted, fontSize: 11 }}>Top 5% verified donors</small>
+              </div>
+
+              <div style={{ ...cardStyle, padding: 22, borderTop: `4px solid #F59E0B` }}>
+                <span style={{ fontSize: 9, fontWeight: 900, color: "#F59E0B", letterSpacing: ".15em", textTransform: "uppercase" }}>
+                  AVERAGE RATING
+                </span>
+                <div style={{ fontSize: 32, fontWeight: 950, color: COLORS.navy, margin: "6px 0 2px" }}>
+                  4.9 <span style={{ fontSize: 20, color: "#F59E0B" }}>★★★★★</span>
+                </div>
+                <small style={{ color: COLORS.muted, fontSize: 11 }}>Based on 48 receiver reviews</small>
+              </div>
+
+              <div style={{ ...cardStyle, padding: 22, borderTop: `4px solid ${COLORS.green}` }}>
+                <span style={{ fontSize: 9, fontWeight: 900, color: COLORS.green, letterSpacing: ".15em", textTransform: "uppercase" }}>
+                  FULFILLMENT RATE
+                </span>
+                <div style={{ fontSize: 32, fontWeight: 950, color: COLORS.navy, margin: "6px 0 2px" }}>
+                  100%
+                </div>
+                <small style={{ color: COLORS.muted, fontSize: 11 }}>0 canceled or spoiled pickups</small>
+              </div>
+
+              <div style={{ ...cardStyle, padding: 22, borderTop: `4px solid #071A2F` }}>
+                <span style={{ fontSize: 9, fontWeight: 900, color: COLORS.navy, letterSpacing: ".15em", textTransform: "uppercase" }}>
+                  DONOR BADGE
+                </span>
+                <div style={{ fontSize: 22, fontWeight: 950, color: COLORS.navy, margin: "10px 0 6px" }}>
+                  🛡️ Anchor Partner
+                </div>
+                <small style={{ color: COLORS.green, fontSize: 11, fontWeight: 800 }}>✓ Verified Food Business</small>
+              </div>
+            </div>
+
+            {/* Breakdown Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
+              {/* Quality Pillars */}
+              <div style={{ ...cardStyle, padding: 24 }}>
+                <h3 style={{ margin: "0 0 16px", color: COLORS.navy, fontSize: 16, fontWeight: 900 }}>
+                  Rating Breakdown by Category
+                </h3>
+                {[
+                  { label: "Food Quality & Freshness", score: "5.0 ★", percent: 100 },
+                  { label: "Pickup Readiness & Promptness", score: "4.9 ★", percent: 98 },
+                  { label: "Listing Details & Accuracy", score: "4.9 ★", percent: 98 },
+                  { label: "Hygiene & Packaging Compliance", score: "5.0 ★", percent: 100 },
+                ].map((item) => (
+                  <div key={item.label} style={{ marginBottom: 14 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>
+                      <span>{item.label}</span>
+                      <span style={{ color: COLORS.green }}>{item.score}</span>
+                    </div>
+                    <div style={{ height: 6, borderRadius: 999, background: "#EDF2F4", overflow: "hidden" }}>
+                      <div style={{ width: `${item.percent}%`, height: "100%", background: COLORS.green, borderRadius: 999 }} />
+                    </div>
+                  </div>
+                ))}
+
+                <div style={{ marginTop: 22, padding: "14px 16px", borderRadius: 14, background: COLORS.softGreen, border: `1px solid rgba(22,160,133,0.15)` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: COLORS.green, fontWeight: 900, fontSize: 12, marginBottom: 4 }}>
+                    <span>✓</span> Verified Trust Credentials
+                  </div>
+                  <p style={{ margin: 0, color: COLORS.text, fontSize: 11, lineHeight: 1.5 }}>
+                    Donations are matched with priority couriers and recipient NGOs because your safety metrics exceed 95%.
+                  </p>
+                </div>
+              </div>
+
+              {/* Receiver Feedback / Reviews */}
+              <div style={{ ...cardStyle, padding: 24 }}>
+                <h3 style={{ margin: "0 0 16px", color: COLORS.navy, fontSize: 16, fontWeight: 900 }}>
+                  Recent Receiver Testimonials
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {[
+                    {
+                      ngo: "City Hope Kitchen",
+                      food: "Cooked Meals (30 Servings)",
+                      date: "2 days ago",
+                      rating: 5,
+                      review: "Food was fresh, warm, and packed with high standards. Fed 30 families at our community center.",
+                    },
+                    {
+                      ngo: "Green Valley Shelter",
+                      food: "Bakery Surplus & Bread",
+                      date: "5 days ago",
+                      rating: 5,
+                      review: "Pickup was ready on time. Amazing donor consistency and transparent packaging labels.",
+                    },
+                    {
+                      ngo: "Care & Share Mission",
+                      food: "Fresh Fruit & Produce",
+                      date: "1 week ago",
+                      rating: 5,
+                      review: "High quality fresh produce with zero spoilage. Seamless volunteer collection.",
+                    },
+                  ].map((rev, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: "14px 16px",
+                        borderRadius: 14,
+                        background: "#F8FAFB",
+                        border: `1px solid ${COLORS.border}`,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <strong style={{ color: COLORS.navy, fontSize: 13, fontWeight: 900 }}>{rev.ngo}</strong>
+                        <span style={{ color: "#F59E0B", fontSize: 12 }}>{"★".repeat(rev.rating)}</span>
+                      </div>
+                      <small style={{ color: COLORS.muted, display: "block", fontSize: 10, marginBottom: 6 }}>
+                        {rev.food} · {rev.date}
+                      </small>
+                      <p style={{ margin: 0, color: COLORS.text, fontSize: 12, lineHeight: 1.4 }}>
+                        "{rev.review}"
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================== 
+            3. PROFILE & VERIFICATION PAGE
+            ===================================================== */} 
+        {isProfile && (
+          <div style={{ marginTop: 20 }}>
+            <SectionHeader
+              eyebrow="DONOR CREDENTIALS"
+              title="Profile & Food Safety Verification"
+              description="Manage your donor identity, FSSAI / health license details, and verification status."
+              action={
+                <div
+                  style={{
+                    ...pillStyle,
+                    background: verificationStatus === "verified" ? COLORS.softGreen : "#FEF3C7",
+                    color: verificationStatus === "verified" ? COLORS.green : "#D97706",
+                    border: `1px solid ${verificationStatus === "verified" ? "rgba(22,160,133,.3)" : "#FDE68A"}`,
+                    fontSize: 12,
+                    padding: "8px 16px",
+                  }}
+                >
+                  {verificationStatus === "verified" ? "✓ Verified Donor" : "⏳ Pending Verification"}
+                </div>
+              }
+            />
+
+            {/* Verification Banner */}
+            <div
+              style={{
+                ...cardStyle,
+                padding: "20px 24px",
+                marginBottom: 24,
+                background: `linear-gradient(135deg, ${COLORS.navy}, ${COLORS.navy2})`,
+                color: COLORS.white,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 16,
+              }}
+            >
+              <div>
+                <span style={{ color: COLORS.mint, fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".12em" }}>
+                  FOOD SAFETY STANDARDS COMPLIANCE
+                </span>
+                <h3 style={{ margin: "6px 0 2px", color: COLORS.white, fontSize: 18, fontWeight: 900 }}>
+                  {verificationStatus === "verified" ? "FSSAI & Food Hygiene Verified" : "Verification Documents Submitted"}
+                </h3>
+                <p style={{ margin: 0, color: "#CBD5E1", fontSize: 12, maxWidth: 500 }}>
+                  Verified donors get priority algorithm matching with registered NGOs, official green checkmarks on all listings, and automated pickup logistics.
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <span style={{ padding: "8px 14px", borderRadius: 999, background: "rgba(255,255,255,.12)", fontSize: 11, fontWeight: 800 }}>
+                  ID: {profileFssai}
+                </span>
+              </div>
+            </div>
+
+            {/* Profile Edit Form */}
+            <form onSubmit={handleSaveProfileVerification} style={{ ...cardStyle, padding: 28 }}>
+              <h3 style={{ margin: "0 0 20px", color: COLORS.navy, fontSize: 16, fontWeight: 900 }}>
+                Donor Business & Verification Information
+              </h3>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 18, marginBottom: 20 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 850, color: COLORS.text, marginBottom: 6 }}>
+                    Business / Kitchen Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={profileBusinessName}
+                    onChange={(e) => setProfileBusinessName(e.target.value)}
+                    style={{ ...inputStyle, width: "100%" }}
+                    placeholder="e.g. Fresh Bites Catering"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 850, color: COLORS.text, marginBottom: 6 }}>
+                    Donor Organization Type *
+                  </label>
+                  <select
+                    value={profileDonorType}
+                    onChange={(e) => setProfileDonorType(e.target.value)}
+                    style={{ ...inputStyle, width: "100%" }}
+                  >
+                    <option value="Restaurant & Catering">Restaurant & Catering</option>
+                    <option value="Hotel & Hospitality">Hotel & Hospitality</option>
+                    <option value="Bakery & Cafe">Bakery & Cafe</option>
+                    <option value="Corporate Cafeteria">Corporate Cafeteria</option>
+                    <option value="Supermarket / Grocery">Supermarket / Grocery</option>
+                    <option value="Individual Donor">Individual Donor</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 850, color: COLORS.text, marginBottom: 6 }}>
+                    Primary Contact Person *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={profileContactPerson}
+                    onChange={(e) => setProfileContactPerson(e.target.value)}
+                    style={{ ...inputStyle, width: "100%" }}
+                    placeholder="e.g. Chef / Manager Name"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 850, color: COLORS.text, marginBottom: 6 }}>
+                    Contact Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={profilePhone}
+                    onChange={(e) => setProfilePhone(e.target.value)}
+                    style={{ ...inputStyle, width: "100%" }}
+                    placeholder="e.g. +91 9876543210"
+                  />
+                </div>
+
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 850, color: COLORS.text, marginBottom: 6 }}>
+                    Default Pickup & Kitchen Address *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={profileAddress}
+                    onChange={(e) => setProfileAddress(e.target.value)}
+                    style={{ ...inputStyle, width: "100%" }}
+                    placeholder="e.g. 42 Connaught Place, Central Wing, New Delhi"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 850, color: COLORS.text, marginBottom: 6 }}>
+                    FSSAI License / Business Registration Number *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={profileFssai}
+                    onChange={(e) => setProfileFssai(e.target.value)}
+                    style={{ ...inputStyle, width: "100%" }}
+                    placeholder="e.g. FSSAI-11223344556677"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 850, color: COLORS.text, marginBottom: 6 }}>
+                    Verification Certificate Document
+                  </label>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <input
+                      type="file"
+                      id="doc-upload"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setProfileDocName(e.target.files[0].name);
+                          showToast(`Attached ${e.target.files[0].name}`);
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor="doc-upload"
+                      style={{
+                        ...buttonStyle,
+                        background: COLORS.white,
+                        color: COLORS.navy,
+                        border: `1px solid ${COLORS.border}`,
+                        padding: "10px 16px",
+                        fontSize: 12,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      📎 {profileDocName ? "Replace Document" : "Upload Document"}
+                    </label>
+                    <span style={{ fontSize: 12, color: COLORS.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {profileDocName || "No document chosen"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, borderTop: `1px solid ${COLORS.border}`, paddingTop: 20 }}>
+                <button
+                  type="submit"
+                  disabled={isSavingProfile}
+                  style={{
+                    ...buttonStyle,
+                    padding: "12px 28px",
+                    fontSize: 13,
+                    fontWeight: 900,
+                    cursor: isSavingProfile ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {isSavingProfile ? "Saving Details..." : "Save Profile & Update Verification →"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* ===================================================== 
+            4. SUPPORT & HELP PAGE
+            ===================================================== */} 
+        {isSupport && (
+          <div style={{ marginTop: 20 }}>
+            <SectionHeader
+              eyebrow="ASSISTANCE & GUIDELINES"
+              title="Donor Support & Help Center"
+              description="Direct hotline, safe food packaging guidelines, and donor FAQ."
+            />
+
+            {/* Helpline Card */}
+            <div
+              style={{
+                ...cardStyle,
+                padding: "24px 28px",
+                marginBottom: 24,
+                background: `linear-gradient(135deg, ${COLORS.navy}, ${COLORS.navy2})`,
+                color: COLORS.white,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 16,
+              }}
+            >
+              <div>
+                <span style={{ color: COLORS.mint, fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".12em" }}>
+                  24/7 DONOR HELPLINE
+                </span>
+                <h3 style={{ margin: "6px 0 2px", color: COLORS.white, fontSize: 20, fontWeight: 900 }}>
+                  📞 +91 1800-MEAL-DONOR (Toll Free)
+                </h3>
+                <p style={{ margin: 0, color: "#CBD5E1", fontSize: 12 }}>
+                  Call our food rescue dispatch team for urgent pickup coordination or cancellation support.
+                </p>
+              </div>
+              <a
+                href="mailto:donors@mealbridge.org"
+                style={{
+                  ...buttonStyle,
+                  background: COLORS.green,
+                  color: COLORS.white,
+                  textDecoration: "none",
+                  padding: "12px 20px",
+                  fontSize: 13,
+                  fontWeight: 800,
+                }}
+              >
+                Email Donor Desk →
+              </a>
+            </div>
+
+            {/* Ticket Submission Confirmation */}
+            {donorSubmittedTicket && (
+              <div
+                style={{
+                  ...cardStyle,
+                  padding: "18px 22px",
+                  marginBottom: 20,
+                  background: "#ECFDF5",
+                  border: `1px solid rgba(22,160,133,0.3)`,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={{ color: COLORS.green, fontWeight: 900, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>✓</span> Support Ticket Created: #{donorSubmittedTicket.id}
+                  </div>
+                  <div style={{ color: COLORS.text, fontSize: 12, marginTop: 3 }}>
+                    Category: <strong>{donorSubmittedTicket.category}</strong> · Our donor operations team is reviewing your ticket.
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDonorSubmittedTicket(null)}
+                  style={{
+                    background: "none",
+                    border: `1px solid ${COLORS.green}`,
+                    color: COLORS.green,
+                    padding: "6px 14px",
+                    borderRadius: 8,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {/* Support Grid: Ticket Form + FAQ */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
+              {/* Interactive Ticket / Help Request Form */}
+              <form onSubmit={handleDonorTicketSubmit} style={{ ...cardStyle, padding: 24 }}>
+                <h3 style={{ margin: "0 0 16px", color: COLORS.navy, fontSize: 16, fontWeight: 900 }}>
+                  Create a Support Request
+                </h3>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: COLORS.text, marginBottom: 6 }}>
+                    Assistance Category *
+                  </label>
+                  <select
+                    value={donorTicketCategory}
+                    onChange={(e) => setDonorTicketCategory(e.target.value)}
+                    style={{ ...inputStyle, width: "100%" }}
+                  >
+                    <option value="Pickup Delay / Coordination">Pickup Delay / Coordination</option>
+                    <option value="Food Safety & Packaging Guidance">Food Safety & Packaging Guidance</option>
+                    <option value="Cancel or Edit Food Listing">Cancel or Edit Food Listing</option>
+                    <option value="Tax Exemption / 80G Certificate">Tax Exemption / 80G Certificate</option>
+                    <option value="General Support">General Support</option>
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: COLORS.text, marginBottom: 6 }}>
+                    Subject / Listing Ref *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={donorTicketSubject}
+                    onChange={(e) => setDonorTicketSubject(e.target.value)}
+                    placeholder="e.g. Courier late for pickup order #102"
+                    style={{ ...inputStyle, width: "100%" }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: COLORS.text, marginBottom: 6 }}>
+                    Priority Level
+                  </label>
+                  <select
+                    value={donorTicketPriority}
+                    onChange={(e) => setDonorTicketPriority(e.target.value)}
+                    style={{ ...inputStyle, width: "100%" }}
+                  >
+                    <option value="Normal">Normal — standard inquiry</option>
+                    <option value="High">High — upcoming food pickup</option>
+                    <option value="Urgent">Urgent / Emergency — immediate food rescue issue</option>
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: 18 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: COLORS.text, marginBottom: 6 }}>
+                    Detailed Message *
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={donorTicketMessage}
+                    onChange={(e) => setDonorTicketMessage(e.target.value)}
+                    placeholder="Describe what you need help with in detail..."
+                    style={{ ...inputStyle, width: "100%", resize: "vertical" }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingDonorTicket}
+                  style={{
+                    ...buttonStyle,
+                    width: "100%",
+                    padding: "12px",
+                    fontWeight: 900,
+                    fontSize: 13,
+                    cursor: isSubmittingDonorTicket ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {isSubmittingDonorTicket ? "Submitting Ticket..." : "Submit Support Request →"}
+                </button>
+              </form>
+
+              {/* FAQ */}
+              <div style={{ ...cardStyle, padding: 24 }}>
+                <h3 style={{ margin: "0 0 16px", color: COLORS.navy, fontSize: 16, fontWeight: 900 }}>
+                  Frequently Asked Questions
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {[
+                    {
+                      q: "How fast do recipient NGOs respond to my food listing?",
+                      a: "Most food listings in metropolitan areas are claimed by verified NGOs within 15 to 30 minutes of registration.",
+                    },
+                    {
+                      q: "What packaging is required for surplus cooked meals?",
+                      a: "Use food-grade sealed containers or standard disposable food pans. Label the container with the preparation time and veg/non-veg status.",
+                    },
+                    {
+                      q: "What if a volunteer courier is delayed for pickup?",
+                      a: "You can track the courier status in Live Delivery or submit an Urgent ticket above for immediate courier re-routing.",
+                    },
+                    {
+                      q: "How does the AI Freshness Assessment calculate food quality?",
+                      a: "The MobileNetV3 AI vision model analyzes food photo color, texture, and preparation timestamps to verify food safety before matching.",
+                    },
+                  ].map((faq, i) => (
+                    <div key={i} style={{ padding: "14px 16px", borderRadius: 12, background: "#F8FAFB", border: `1px solid ${COLORS.border}` }}>
+                      <strong style={{ color: COLORS.navy, fontSize: 13, display: "block", marginBottom: 4 }}>
+                        Q: {faq.q}
+                      </strong>
+                      <p style={{ margin: 0, color: COLORS.muted, fontSize: 12, lineHeight: 1.5 }}>
+                        {faq.a}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ===================================================== 
             TOAST 
             ===================================================== */} 
@@ -2403,130 +3248,6 @@ export default function DonorDashboard() {
             )} 
           </section> 
  
-          {/* QUICK ACTIONS */} 
- 
-          <section> 
-            <SectionHeader 
-              eyebrow="Workspace" 
-              title="Quick Actions" 
-              description="Shortcuts for your donor workflow." 
-            /> 
- 
-            <div 
-              style={{ 
-                ...cardStyle, 
-                padding: 13, 
-              }} 
-            > 
-              {[ 
-                { 
-                  icon: "🍱", 
-                  title: "Register Food", 
-                  text: "List new surplus meals", 
-                  action: () => { 
-                    resetForm(); 
-                    setIsRegisterOpen(true); 
-                  }, 
-                }, 
-                { 
-                  icon: "📊", 
-                  title: "Impact Summary", 
-                  text: "View your donor performance", 
-                  action: () => 
-                    scrollTo("impact-summary"), 
-                }, 
-                { 
-                  icon: "📦", 
-                  title: "My Donations", 
-                  text: "Manage active listings", 
-                  action: () => 
-                    scrollTo("active-listings"), 
-                }, 
-                { 
-                  icon: "📩", 
-                  title: "Requests", 
-                  text: `${incomingRequests.length} awaiting response`, 
-                  action: () => 
-                    scrollTo("incoming-requests"), 
-                }, 
-                { 
-                  icon: "🚚", 
-                  title: "Live Workflow", 
-                  text: "Track accepted orders", 
-                  action: () => 
-                    scrollTo("live-workflow"), 
-                }, 
-              ].map((item) => ( 
-                <button 
-                  key={item.title} 
-                  onClick={item.action} 
-                  style={{ 
-                    width: "100%", 
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: 11, 
-                    padding: "11px 9px", 
-                    marginBottom: 5, 
-                    border: "none", 
-                    borderRadius: 12, 
-                    background: "#F7FAFA", 
-                    color: COLORS.text, 
-                    cursor: "pointer", 
-                    textAlign: "left", 
-                    fontFamily: "inherit", 
-                  }} 
-                > 
-                  <span 
-                    style={{ 
-                      width: 37, 
-                      height: 37, 
-                      flexShrink: 0, 
-                      display: "grid", 
-                      placeItems: "center", 
-                      borderRadius: 11, 
-                      background: "#EAF9F4", 
-                      fontSize: 16, 
-                    }} 
-                  > 
-                    {item.icon} 
-                  </span> 
- 
-                  <span style={{ minWidth: 0 }}> 
-                    <strong 
-                      style={{ 
-                        display: "block", 
-                        fontSize: 11, 
-                        fontWeight: 850, 
-                      }} 
-                    > 
-                      {item.title} 
-                    </strong> 
- 
-                    <small 
-                      style={{ 
-                        display: "block", 
-                        marginTop: 2, 
-                        color: "#91A0AE", 
-                        fontSize: 9, 
-                      }} 
-                    > 
-                      {item.text} 
-                    </small> 
-                  </span> 
- 
-                  <span 
-                    style={{ 
-                      marginLeft: "auto", 
-                      color: "#9AAAB6", 
-                      fontSize: 15, 
-                    }} 
-                  > 
-                    → 
-                  </span> 
-                </button> 
-              ))} 
-            </div> 
-          </section> 
         </div> 
  
         {/* ===================================================== 
@@ -2849,6 +3570,7 @@ export default function DonorDashboard() {
             ===================================================== */} 
  
         <section 
+          className="impact-strip"
           style={{ 
             ...cardStyle, 
             padding: 14, 
@@ -3058,23 +3780,38 @@ export default function DonorDashboard() {
           )} 
         </section> 
  
-                {/* =====================================================
-            PROFESSIONAL PARTNER CHAT
+                {/* ===================================================== 
+            PAST DONATIONS (ORDER HISTORY)
             ===================================================== */}
-
-        <ChatPanel
-          partners={chatPartners}
-          activePartner={activeChatPartner}
-          selectedChatId={selectedChatId}
-          onSelectPartner={setSelectedChatId}
-          messages={
-            chatMessages[activeChatPartner?.id] || []
-          }
-          input={chatInput}
-          setInput={setChatInput}
-          onSend={handleSendChat}
-          currentUserName={user?.fullName || "Vidhi Mittal"}
-        />
+        <section id="past-donations" style={{ marginBottom: 30 }}>
+          <SectionHeader 
+            eyebrow="History" 
+            title="Order History" 
+            description="View your past, completed, and cancelled donations." 
+          />
+          {completedOrders.length === 0 ? (
+            <div style={{ ...cardStyle, padding: "36px 25px", textAlign: "center" }}>
+              <div style={{ fontSize: 28, marginBottom: 7 }}>📦</div>
+              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: COLORS.navy }}>No completed orders yet</h3>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 }}>
+              {completedOrders.map(order => (
+                <article key={order.id} style={{ ...cardStyle, padding: 18, borderLeft: `4px solid ${COLORS.green}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                    <h3 style={{ margin: 0, color: COLORS.navy, fontSize: 13, fontWeight: 900 }}>{order.ngoName || "Community Partner"}</h3>
+                    <StatusBadge status={order.status} />
+                  </div>
+                  <p style={{ margin: "0 0 10px", color: COLORS.muted, fontSize: 11 }}>{order.foodRequested}</p>
+                  <div style={{ display: "flex", gap: 15, fontSize: 10, color: COLORS.muted }}>
+                    <span><strong>Qty:</strong> {order.quantity || order.expectedPeople || 0} portions</span>
+                    <span><strong>Date:</strong> {order.orderTime ? new Date(order.orderTime).toLocaleDateString() : "—"}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* =====================================================
             ORDER DETAILS MODAL
@@ -4038,547 +4775,6 @@ export default function DonorDashboard() {
     </DashboardLayout> 
   ); 
 } 
- 
-/* =========================================================
-   PROFESSIONAL CHAT PANEL
-   ========================================================= */
-
-function ChatPanel({
-  partners,
-  activePartner,
-  selectedChatId,
-  onSelectPartner,
-  messages,
-  input,
-  setInput,
-  onSend,
-  currentUserName,
-}) {
-  return (
-    <section
-      id="partner-chat"
-      className="donor-chat-panel"
-      style={{
-        marginBottom: 30,
-        border: "1px solid #DDEBE8",
-        borderRadius: 22,
-        overflow: "hidden",
-        background: "#FFFFFF",
-        boxShadow: "0 14px 45px rgba(16,72,64,.07)",
-      }}
-    >
-      <div
-        className="donor-chat-header"
-        style={{
-          minHeight: 74,
-          padding: "15px 20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 15,
-          background: "linear-gradient(135deg,#F3FBF9,#FFFFFF)",
-          borderBottom: "1px solid #E8F0EE",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            minWidth: 0,
-          }}
-        >
-          <div
-            style={{
-              width: 42,
-              height: 42,
-              flexShrink: 0,
-              display: "grid",
-              placeItems: "center",
-              borderRadius: 14,
-              background:
-                "linear-gradient(135deg,#08A979,#10B9A4)",
-              color: "#FFFFFF",
-              fontSize: 18,
-              fontWeight: 900,
-              boxShadow: "0 8px 18px rgba(8,169,121,.18)",
-            }}
-          >
-            ✦
-          </div>
-
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                color: COLORS.greenDark,
-                fontSize: 8,
-                fontWeight: 900,
-                letterSpacing: ".14em",
-                textTransform: "uppercase",
-                marginBottom: 3,
-              }}
-            >
-              Partner Communication
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              <strong
-                style={{
-                  color: COLORS.navy,
-                  fontSize: 15,
-                  fontWeight: 900,
-                  letterSpacing: "-.025em",
-                }}
-              >
-                Chat about your donation
-              </strong>
-
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "4px 8px",
-                  borderRadius: 999,
-                  background: "#EAF9F4",
-                  color: COLORS.greenDark,
-                  fontSize: 8,
-                  fontWeight: 850,
-                }}
-              >
-                <span style={{ fontSize: 7 }}>●</span> Connected
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "7px 10px",
-            borderRadius: 10,
-            background: "#FFFFFF",
-            border: "1px solid #DDEBE8",
-            color: COLORS.muted,
-            fontSize: 9,
-            fontWeight: 800,
-          }}
-        >
-          🔒 Secure
-        </span>
-      </div>
-
-      <div
-        className="donor-chat-toolbar"
-        style={{
-          padding: "12px 20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          background: "#FBFDFC",
-          borderBottom: "1px solid #EDF3F1",
-        }}
-      >
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 9,
-            color: COLORS.muted,
-            fontSize: 9,
-            fontWeight: 800,
-          }}
-        >
-          <span>Chatting about</span>
-          <select
-            value={activePartner?.id || selectedChatId || ""}
-            onChange={(e) => onSelectPartner(e.target.value)}
-            style={{
-              minWidth: 220,
-              padding: "9px 34px 9px 11px",
-              borderRadius: 10,
-              border: "1px solid #D9E7E4",
-              outline: "none",
-              background: "#FFFFFF",
-              color: COLORS.navy,
-              fontFamily: "inherit",
-              fontSize: 10,
-              fontWeight: 800,
-            }}
-          >
-            {partners.length === 0 ? (
-              <option value="city-hope-kitchen">
-                chapati (City Hope Kitchen)
-              </option>
-            ) : (
-              partners.map((partner) => (
-                <option key={partner.id} value={partner.id}>
-                  {partner.food} ({partner.name})
-                </option>
-              ))
-            )}
-          </select>
-        </label>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 7,
-            color: COLORS.muted,
-            fontSize: 9,
-          }}
-        >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: "#10B981",
-              boxShadow:
-                "0 0 0 4px rgba(16,185,129,.08)",
-            }}
-          />
-          Partner is available
-        </div>
-      </div>
-
-      <div
-        className="donor-chat-body"
-        style={{
-          minHeight: 360,
-          maxHeight: 480,
-          overflowY: "auto",
-          padding: "22px 24px",
-          background:
-            "radial-gradient(circle at 10% 10%,rgba(16,185,164,.055),transparent 30%),linear-gradient(180deg,#F9FCFC,#F4F9F8)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            marginBottom: 20,
-          }}
-        >
-          <div
-            style={{
-              height: 1,
-              flex: 1,
-              background: "#DDE9E6",
-            }}
-          />
-          <span
-            style={{
-              padding: "5px 10px",
-              borderRadius: 999,
-              background: "#FFFFFF",
-              border: "1px solid #E1EBE9",
-              color: "#8A9AA0",
-              fontSize: 8,
-              fontWeight: 850,
-              letterSpacing: ".08em",
-            }}
-          >
-            TODAY
-          </span>
-          <div
-            style={{
-              height: 1,
-              flex: 1,
-              background: "#DDE9E6",
-            }}
-          />
-        </div>
-
-        {messages.length === 0 ? (
-          <div
-            style={{
-              minHeight: 260,
-              display: "grid",
-              placeItems: "center",
-              textAlign: "center",
-              color: COLORS.muted,
-              fontSize: 11,
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>
-                💬
-              </div>
-              <strong style={{ color: COLORS.navy }}>
-                Start the conversation
-              </strong>
-              <div style={{ marginTop: 4 }}>
-                Send a message to your community partner.
-              </div>
-            </div>
-          </div>
-        ) : (
-          messages.map((message) => {
-            const mine = message.sender === "user";
-            const initials = String(
-              currentUserName || "You"
-            )
-              .split(" ")
-              .map((part) => part[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase();
-
-            return (
-              <div
-                key={message.id}
-                style={{
-                  display: "flex",
-                  justifyContent: mine
-                    ? "flex-end"
-                    : "flex-start",
-                  marginBottom: 16,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-end",
-                    gap: 9,
-                    flexDirection: mine
-                      ? "row-reverse"
-                      : "row",
-                    maxWidth: "78%",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      flexShrink: 0,
-                      display: "grid",
-                      placeItems: "center",
-                      borderRadius: 11,
-                      background: mine
-                        ? "#0E9F86"
-                        : "#E0F4EF",
-                      color: mine
-                        ? "#FFFFFF"
-                        : COLORS.greenDark,
-                      fontSize: 10,
-                      fontWeight: 900,
-                    }}
-                  >
-                    {mine ? initials : "CH"}
-                  </div>
-
-                  <div>
-                    <div
-                      style={{
-                        padding: "12px 14px",
-                        borderRadius: mine
-                          ? "17px 6px 17px 17px"
-                          : "6px 17px 17px 17px",
-                        background: mine
-                          ? "linear-gradient(135deg,#0E9F86,#0B8E78)"
-                          : "#FFFFFF",
-                        border: mine
-                          ? "none"
-                          : "1px solid #DDE9E6",
-                        color: mine
-                          ? "#FFFFFF"
-                          : COLORS.text,
-                        boxShadow:
-                          "0 6px 18px rgba(16,72,64,.055)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          marginBottom: 4,
-                          fontSize: 9,
-                          fontWeight: 900,
-                          color: mine
-                            ? "rgba(255,255,255,.82)"
-                            : COLORS.greenDark,
-                        }}
-                      >
-                        {mine
-                          ? currentUserName
-                          : activePartner?.name ||
-                            "City Hope Kitchen"}
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: 12,
-                          lineHeight: 1.55,
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {message.text}
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 5,
-                        textAlign: mine
-                          ? "right"
-                          : "left",
-                        color: "#91A0A6",
-                        fontSize: 8,
-                      }}
-                    >
-                      {message.time}
-                      {mine ? " · ✓" : ""}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onSend();
-        }}
-        style={{
-          padding: "14px 18px 12px",
-          background: "#FFFFFF",
-          borderTop: "1px solid #E7EFED",
-        }}
-      >
-        <div
-          className="donor-chat-input-wrap"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 9,
-            padding: "6px 7px 6px 8px",
-            borderRadius: 16,
-            background: "#F8FBFA",
-            border: "1px solid #DCE8E5",
-          }}
-        >
-          <button
-            type="button"
-            title="Attachment"
-            style={{
-              width: 38,
-              height: 38,
-              flexShrink: 0,
-              border: "1px solid #E0EAE8",
-              borderRadius: 11,
-              background: "#FFFFFF",
-              color: COLORS.muted,
-              cursor: "pointer",
-              fontSize: 16,
-            }}
-          >
-            📎
-          </button>
-
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                onSend();
-              }
-            }}
-            placeholder="Ask a question or reply..."
-            aria-label="Message"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              border: "none",
-              outline: "none",
-              background: "transparent",
-              color: COLORS.text,
-              fontFamily: "inherit",
-              fontSize: 12,
-              padding: "10px 2px",
-            }}
-          />
-
-          <button
-            type="button"
-            title="Emoji"
-            style={{
-              width: 36,
-              height: 36,
-              flexShrink: 0,
-              border: "none",
-              background: "transparent",
-              color: COLORS.muted,
-              cursor: "pointer",
-              fontSize: 17,
-            }}
-          >
-            ☺
-          </button>
-
-          <button
-            type="submit"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 7,
-              height: 40,
-              padding: "0 15px",
-              border: "none",
-              borderRadius: 12,
-              background:
-                "linear-gradient(135deg,#08A979,#10B9A4)",
-              color: "#FFFFFF",
-              cursor: "pointer",
-              fontSize: 10,
-              fontWeight: 900,
-              boxShadow:
-                "0 7px 16px rgba(8,169,121,.18)",
-            }}
-          >
-            Send <span style={{ fontSize: 14 }}>➤</span>
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            flexWrap: "wrap",
-            padding: "8px 3px 0",
-            color: "#91A0A6",
-            fontSize: 8,
-          }}
-        >
-          <span>
-            💡 Tip: Be specific for faster and more accurate
-            responses.
-          </span>
-          <span>
-            Press <strong style={{ color: COLORS.greenDark }}>Enter</strong> to send
-          </span>
-        </div>
-      </form>
-    </section>
-  );
-}
-
 /* =========================================================
    DONATION CARD
    ========================================================= */ 
@@ -5019,7 +5215,31 @@ const buttonBase = {
   transition: 
     "transform .18s ease, box-shadow .18s ease, background .18s ease", 
 }; 
- 
+
+const buttonStyle = {
+  ...buttonBase,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  padding: "11px 18px",
+  borderRadius: 11,
+  background: "linear-gradient(135deg,#08A979,#10B9A4)",
+  color: "#FFFFFF",
+  fontSize: 12,
+  boxShadow: "0 8px 20px rgba(8,169,121,.15)",
+};
+
+const pillStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "6px 12px",
+  borderRadius: 999,
+  fontSize: 11,
+  fontWeight: 800,
+};
+
 const secondaryButton = { 
   ...buttonBase, 
   display: "inline-flex", 
@@ -5209,63 +5429,6 @@ if (
         gap: 3px !important; 
       } 
     } 
- 
-    .donor-chat-panel select:focus,
-    .donor-chat-panel input:focus {
-      border-color: #10B9A4 !important;
-      box-shadow: 0 0 0 3px rgba(16,185,164,.09);
-    }
-
-    @media (max-width: 800px) {
-      .donor-chat-toolbar {
-        align-items: flex-start !important;
-        flex-direction: column !important;
-      }
-
-      .donor-chat-toolbar label {
-        width: 100%;
-        align-items: flex-start !important;
-        flex-direction: column !important;
-      }
-
-      .donor-chat-toolbar select {
-        width: 100%;
-        min-width: 0 !important;
-      }
-
-      .donor-chat-body {
-        min-height: 330px !important;
-        padding: 18px 14px !important;
-      }
-    }
-
-    @media (max-width: 560px) {
-      .donor-chat-header {
-        padding: 13px !important;
-      }
-
-      .donor-chat-header > span {
-        display: none !important;
-      }
-
-      .donor-chat-input-wrap {
-        flex-wrap: wrap !important;
-      }
-
-      .donor-chat-input-wrap input {
-        order: 2;
-        flex-basis: calc(100% - 48px) !important;
-      }
-
-      .donor-chat-input-wrap button[type="submit"] {
-        flex: 1;
-        justify-content: center;
-      }
-
-      .donor-chat-input-wrap button[title="Emoji"] {
-        display: none;
-      }
-    }
 
     @media (max-width: 800px) { 
       .professional-donor-dashboard { 

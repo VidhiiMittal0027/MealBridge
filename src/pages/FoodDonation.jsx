@@ -38,17 +38,41 @@ export default function FoodDonation() {
     let aiResult = null;
 
     try {
+      const AI_API_URL = "http://127.0.0.1:8000";
+
+      // 0. Check if AI server is reachable
+      try {
+        const healthCheck = await fetch(AI_API_URL + "/", {
+          method: "GET",
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!healthCheck.ok) throw new Error("AI server returned an error.");
+        const healthData = await healthCheck.json();
+        if (!healthData.model_loaded) {
+          throw new Error("AI model is not loaded. Please restart the AI service.");
+        }
+      } catch (healthErr) {
+        if (healthErr.message === "Failed to fetch" || healthErr.name === "TypeError" || healthErr.name === "TimeoutError") {
+          throw new Error(
+            "Cannot connect to the AI Assessment server. Please start it: cd ai-model && pip install -r requirements.txt && python api/main.py"
+          );
+        }
+        throw healthErr;
+      }
+
       // 1. Run AI Assessment
       const formData = new FormData();
       formData.append("file", imageFile);
 
-      const aiResponse = await fetch("http://127.0.0.1:8000/predict-freshness", {
+      const aiResponse = await fetch(AI_API_URL + "/predict-freshness", {
         method: "POST",
         body: formData,
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!aiResponse.ok) {
-        throw new Error("AI assessment failed. Please try again.");
+        const errorData = await aiResponse.json().catch(() => null);
+        throw new Error(errorData?.detail || "AI assessment failed. Please try again.");
       }
 
       aiResult = await aiResponse.json();

@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Show, useUser, useClerk } from "@clerk/react";
 import { MealBridgeContext } from "../context/MealBridgeContext";
+import { supabase } from "../supabase";
 
 /* =========================================================
    MEALBRIDGE — PREMIUM NAVBAR
@@ -39,24 +40,54 @@ export default function Navbar() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const [role, setRole] = useState("donor");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   /* =========================================================
-     LOAD ROLE
+     LOAD ROLE & ADMIN STATUS
      ========================================================= */
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const storedRole = sessionStorage.getItem(
-      "mealbridge-role"
-    );
-
-    const clerkRole = user?.unsafeMetadata?.role;
+    const storedRole = sessionStorage.getItem("mealbridge-role");
+    const clerkRole = user?.unsafeMetadata?.role || user?.publicMetadata?.role;
 
     if (storedRole) {
       setRole(storedRole);
     } else if (clerkRole) {
       setRole(clerkRole);
+    }
+
+    const checkAdmin = async () => {
+      if (clerkRole === "admin" || storedRole === "admin") {
+        setIsAdmin(true);
+        return;
+      }
+
+      if (user?.id && supabase) {
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+          if (!error && data?.role === "admin") {
+            setIsAdmin(true);
+            return;
+          }
+        } catch (err) {
+          console.warn("Supabase admin role check notice:", err);
+        }
+      }
+
+      setIsAdmin(false);
+    };
+
+    if (user) {
+      checkAdmin();
+    } else {
+      setIsAdmin(storedRole === "admin");
     }
   }, [user]);
 
@@ -120,20 +151,11 @@ export default function Navbar() {
     setRole(selectedRole);
     closeRoleModal();
 
-    /*
-      Receiver currently has its own direct route.
-      Donor and Delivery continue through authentication.
-    */
-
-    if (selectedRole === "receiver") {
-      navigate("/receiver");
-    } else {
-      navigate(
-        authMode === "signup"
-          ? "/register"
-          : "/login"
-      );
-    }
+    navigate(
+      authMode === "signup"
+        ? "/register"
+        : "/login"
+    );
   };
 
   /* =========================================================
@@ -149,6 +171,10 @@ export default function Navbar() {
     const clerkRole = user?.unsafeMetadata?.role;
 
     const currentRole = storedRole || clerkRole;
+
+    if (currentRole === "admin") {
+      return "/admin";
+    }
 
     if (currentRole === "donor") {
       return "/donor-dashboard";
@@ -1678,6 +1704,22 @@ export default function Navbar() {
                       Settings
                     </button>
 
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="mb-dropdown-item"
+                        style={{ color: "#12846E", fontWeight: 700 }}
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          sessionStorage.setItem("mealbridge-role", "admin");
+                          navigate("/admin");
+                        }}
+                      >
+                        <span>🛡️</span>
+                        Admin Dashboard
+                      </button>
+                    )}
+
                     <div className="mb-divider" />
 
                     <button
@@ -1904,25 +1946,25 @@ export default function Navbar() {
                 Receiver
               </button>
 
-              {/* DELIVERY */}
+              {/* ADMIN */}
 
               <button
                 type="button"
                 className={`
                   mb-role-card
                   ${
-                    selectedRole === "delivery"
+                    selectedRole === "admin"
                       ? "active"
                       : ""
                   }
                 `}
                 onClick={() =>
-                  setSelectedRole("delivery")
+                  setSelectedRole("admin")
                 }
               >
-                🚚
+                🛡️
                 <br />
-                Delivery Agent
+                Admin
               </button>
 
             </div>
