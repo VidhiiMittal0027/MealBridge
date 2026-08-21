@@ -4,6 +4,22 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { MealBridgeContext } from "../context/MealBridgeContext";
 import DashboardLayout from "../components/DashboardLayout";
 import Navbar from "../components/Navbar";
+import {
+  MapPin,
+  Utensils,
+  Package,
+  Truck,
+  Clock,
+  Building2,
+  Users,
+  CheckCircle2,
+  Sparkles,
+  ShieldCheck,
+  HeartHandshake,
+  ArrowRight,
+  Phone,
+  Calendar
+} from "../components/Icons";
 
 /*
   ============================================================
@@ -2011,7 +2027,7 @@ export default function ReceiverPage() {
           )}
 
           <div className="live-badge">
-            LIVE DONATION
+            <Sparkles size={11} color="#52D6B8" /> LIVE DONATION
           </div>
 
           <div className="food-type">
@@ -2033,18 +2049,18 @@ export default function ReceiverPage() {
               }`}
             >
               {item.vegNonVeg === "Veg"
-                ? "VEG"
-                : "NON-VEG"}
+                ? "🟢 VEG"
+                : "🔴 NON-VEG"}
             </span>
           </div>
 
           <div className="donation-meta">
             <span className="meta-pill">
-              🍱 {item.quantity || 0} servings
+              <Utensils size={12} color="#16A085" /> {item.quantity || 0} servings
             </span>
 
             <span className="meta-pill">
-              🕒{" "}
+              <Clock size={12} color="#16A085" />{" "}
               {item.cookingTime
                 ? new Date(
                     item.cookingTime
@@ -2058,8 +2074,8 @@ export default function ReceiverPage() {
 
           <div className="freshness-box">
             <div className="freshness-top">
-              <span className="freshness-label">
-                ✦ AI-ESTIMATED FRESHNESS
+              <span className="freshness-label" style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <Sparkles size={12} color="#16A085" /> AI-ESTIMATED FRESHNESS
               </span>
 
               <span className="freshness-value">
@@ -2083,8 +2099,9 @@ export default function ReceiverPage() {
           <button
             className="view-button"
             onClick={() => openDetails(item)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
           >
-            View Donation →
+            View Donation <ArrowRight size={14} />
           </button>
         </div>
       </article>
@@ -2298,18 +2315,50 @@ export default function ReceiverPage() {
                       ) : (
                         myNGOOrders.slice(0, 3).map((order) => {
                           const activeStep = getTimelineIndex(order.status);
+                          const isDelivered = order.status === "Completed" || order.status === "Picked Up";
                           return (
-                            <div className="order-item" key={order.id}>
+                            <div className="order-item" key={order.id} style={{ padding: "18px 0" }}>
                               <div className="order-top">
-                                <h3 className="order-name">🍱 {order.foodRequested}</h3>
-                                <span className={`status-pill ${getStatusClass(order.status)}`}>
-                                  {order.status}
-                                </span>
+                                <h3 className="order-name" style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 16, fontWeight: 900 }}>
+                                  <Utensils size={15} color="#16A085" /> {order.foodRequested}
+                                </h3>
+                                {isDelivered ? (
+                                  <span 
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 5,
+                                      padding: "6px 12px",
+                                      borderRadius: 999,
+                                      background: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)",
+                                      border: "1px solid #A7F3D0",
+                                      color: "#065F46",
+                                      fontSize: 10,
+                                      fontWeight: 850,
+                                      boxShadow: "0 2px 6px rgba(22,160,133,0.12)"
+                                    }}
+                                  >
+                                    <CheckCircle2 size={12} color="#059669" />
+                                    Successfully Delivered
+                                  </span>
+                                ) : (
+                                  <span className={`status-pill ${getStatusClass(order.status)}`}>
+                                    {order.status}
+                                  </span>
+                                )}
                               </div>
-                              <div className="order-details">
-                                <span>👥 {order.expectedPeople} servings</span>
-                                <span>🕒 {order.orderTime ? new Date(order.orderTime).toLocaleDateString() : "Recently"}</span>
-                                {order.prepTime && <span>📍 Pickup {order.prepTime}</span>}
+                              <div className="order-details" style={{ marginTop: 10 }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#F1FBF8", padding: "4px 9px", borderRadius: 8, color: "#16A085" }}>
+                                  <Users size={12} color="#16A085" /> {order.expectedPeople} servings
+                                </span>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#F8FAFC", padding: "4px 9px", borderRadius: 8, color: "#64748B" }}>
+                                  <Clock size={12} color="#64748B" /> {order.orderTime ? new Date(order.orderTime).toLocaleDateString() : "Recently"}
+                                </span>
+                                {order.prepTime && (
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#F8FAFC", padding: "4px 9px", borderRadius: 8, color: "#64748B" }}>
+                                    <MapPin size={12} color="#64748B" /> Pickup: {order.prepTime}
+                                  </span>
+                                )}
                               </div>
                               <div className="timeline">
                                 {["Requested", "Accepted", "Preparing", "Ready", "Pickup", "Done"].map((label, index) => (
@@ -2332,9 +2381,11 @@ export default function ReceiverPage() {
                     </div>
 
                     <div className="organization-card">
-                      <div className="org-label">Your organization</div>
-                      <h3 className="org-name">{orgDetails?.orgName || "City Hope Kitchen"}</h3>
-                      <div className="org-type">{orgDetails?.orgType || "Community Receiver"}</div>
+                      <div className="org-label" style={{ display: "flex", alignItems: "center", gap: 5, textTransform: "uppercase", fontSize: 10, fontWeight: 850, color: "#16A085" }}>
+                        <Building2 size={13} color="#16A085" /> Verified Organization
+                      </div>
+                      <h3 className="org-name" style={{ marginTop: 6, fontSize: 18, fontWeight: 900 }}>{orgDetails?.orgName || "City Hope Kitchen"}</h3>
+                      <div className="org-type" style={{ color: "#64748B", fontSize: 12 }}>{orgDetails?.orgType || "Community Food Shelter"}</div>
                       <div className="org-divider" />
                       <div className="org-stats">
                         <div className="org-stat">
@@ -2350,16 +2401,16 @@ export default function ReceiverPage() {
                           <span>COMPLETED</span>
                         </div>
                       </div>
-                      <div className="trust-row">
-                        <span className="trust-stars">★★★★★</span>
-                        <span className="trust-text">Verified Community Partner</span>
+                      <div className="trust-row" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14 }}>
+                        <ShieldCheck size={16} color="#16A085" />
+                        <span className="trust-text" style={{ fontSize: 12, fontWeight: 800, color: "#065F46" }}>Verified Community NGO Partner</span>
                       </div>
                       <Link
                         to="/receiver-dashboard/profile"
                         className="register-button"
-                        style={{ width: "100%", marginTop: "17px", display: "inline-block", textAlign: "center", textDecoration: "none" }}
+                        style={{ width: "100%", marginTop: "17px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, textAlign: "center", textDecoration: "none" }}
                       >
-                        Manage Profile →
+                        Manage Profile <ArrowRight size={14} />
                       </Link>
                     </div>
                   </div>

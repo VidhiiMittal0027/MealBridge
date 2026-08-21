@@ -8,6 +8,22 @@ import { useUser } from "@clerk/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { MealBridgeContext } from "../context/MealBridgeContext";
 import DashboardLayout from "../components/DashboardLayout";
+import {
+  MapPin,
+  Utensils,
+  Package,
+  Truck,
+  Clock,
+  Building2,
+  Users,
+  CheckCircle2,
+  Sparkles,
+  ShieldCheck,
+  HeartHandshake,
+  ArrowRight,
+  Phone,
+  Calendar
+} from "../components/Icons";
 
 /* =========================================================
    MEALBRIDGE — PROFESSIONAL DONOR COMMAND CENTER
@@ -98,75 +114,99 @@ function AnimatedNumber({ value }) {
    ========================================================= */ 
  
 function StatusBadge({ status }) { 
-  const styles = { 
-    Pending: { 
-      background: "#FFF7E8", 
-      color: "#B77900", 
-      dot: "#F59E0B", 
-    }, 
-    Accepted: { 
-      background: "#EEF8FF", 
-      color: "#1683BD", 
-      dot: "#38A3DB", 
-    }, 
-    Preparing: { 
-      background: "#FFF6E5", 
-      color: "#B77900", 
-      dot: "#F59E0B", 
-    }, 
-    "Ready for Pickup": { 
-      background: "#EAF9F4", 
-      color: "#058E72", 
-      dot: "#10B981", 
-    }, 
-    "Picked Up": { 
-      background: "#EEF8FF", 
-      color: "#1683BD", 
-      dot: "#1683BD", 
-    }, 
-    Completed: { 
-      background: "#EAF9F4", 
-      color: "#058E72", 
-      dot: "#10B981", 
-    }, 
-    Declined: { 
-      background: "#FFF0F0", 
-      color: "#C95353", 
-      dot: "#EF6B6B", 
-    }, 
-    Available: { 
-      background: "#EAF9F4", 
-      color: "#058E72", 
-      dot: "#10B981", 
-    }, 
-  }; 
- 
-  const current = styles[status] || styles.Available; 
- 
+  const getBadgeConfig = (s) => {
+    switch (s) {
+      case "Completed":
+      case "Delivered":
+        return {
+          background: "linear-gradient(135deg, #EAF9F4 0%, #D1FAE5 100%)",
+          border: "1px solid #A7F3D0",
+          color: "#065F46",
+          icon: <CheckCircle2 size={12} color="#059669" />,
+          label: "Completed"
+        };
+      case "Ready for Pickup":
+        return {
+          background: "linear-gradient(135deg, #E6FFFA 0%, #CCFBF1 100%)",
+          border: "1px solid #99F6E4",
+          color: "#0F766E",
+          icon: <Truck size={12} color="#0D9488" />,
+          label: "Ready for Pickup"
+        };
+      case "Picked Up":
+        return {
+          background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
+          border: "1px solid #BFDBFE",
+          color: "#1E40AF",
+          icon: <Truck size={12} color="#2563EB" />,
+          label: "Picked Up"
+        };
+      case "Preparing":
+        return {
+          background: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)",
+          border: "1px solid #FCD34D",
+          color: "#92400E",
+          icon: <Utensils size={12} color="#D97706" />,
+          label: "Preparing"
+        };
+      case "Accepted":
+        return {
+          background: "linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)",
+          border: "1px solid #BBF7D0",
+          color: "#166534",
+          icon: <CheckCircle2 size={12} color="#16A34A" />,
+          label: "Accepted"
+        };
+      case "Pending":
+        return {
+          background: "linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)",
+          border: "1px solid #FDE68A",
+          color: "#B45309",
+          icon: <Clock size={12} color="#D97706" />,
+          label: "Pending Request"
+        };
+      case "Declined":
+        return {
+          background: "linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)",
+          border: "1px solid #FECACA",
+          color: "#991B1B",
+          icon: <span style={{ fontSize: 10, fontWeight: 900 }}>✕</span>,
+          label: "Declined"
+        };
+      case "Available":
+      default:
+        return {
+          background: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)",
+          border: "1px solid #A7F3D0",
+          color: "#065F46",
+          icon: <Sparkles size={12} color="#059669" />,
+          label: s || "Available"
+        };
+    }
+  };
+
+  const config = getBadgeConfig(status);
+
   return ( 
     <span 
       style={{ 
         display: "inline-flex", 
         alignItems: "center", 
-        gap: 6, 
-        padding: "6px 10px", 
+        gap: 5, 
+        padding: "5px 10px", 
         borderRadius: 999, 
-        background: current.background, 
-        color: current.color, 
+        background: config.background, 
+        border: config.border,
+        color: config.color, 
         fontSize: 10, 
         fontWeight: 850, 
+        letterSpacing: "-0.01em",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
         whiteSpace: "nowrap", 
       }} 
     > 
-      <span 
-        style={{ 
-          width: 6, 
-          height: 6, 
-          borderRadius: "50%", 
-          background: current.dot, 
-        }} 
-      /> 
-      {status} 
+      {config.icon}
+      {config.label} 
     </span> 
   ); 
 } 
@@ -3391,8 +3431,8 @@ export default function DonorDashboard() {
               <div 
                 style={{ 
                   display: "grid", 
-                  gridTemplateColumns: "repeat(2,minmax(0,1fr))", 
-                  gap: 14, 
+                  gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", 
+                  gap: 16, 
                 }} 
               > 
                 {activeOrders.map((order) => { 
@@ -3410,155 +3450,177 @@ export default function DonorDashboard() {
                     <article 
                       key={order.id} 
                       style={{ 
-                        ...cardStyle, 
-                        padding: 18, 
+                        background: "#FFFFFF", 
+                        border: "1px solid #E2EEE9", 
+                        borderRadius: 22, 
+                        padding: 22, 
+                        boxShadow: "0 4px 20px -2px rgba(8,169,121,0.06), 0 2px 6px rgba(0,0,0,0.02)",
+                        transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 14
                       }} 
                     > 
                       <div 
                         style={{ 
                           display: "flex", 
                           justifyContent: "space-between", 
-                          alignItems: "center", 
+                          alignItems: "flex-start", 
                           gap: 12, 
                         }} 
                       > 
-                        <div> 
+                        <div style={{ minWidth: 0 }}> 
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                            <Building2 size={14} color="#08A979" />
+                            <span style={{ fontSize: 10, fontWeight: 850, color: "#08A979", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                              {order.ngoName || "Community NGO"}
+                            </span>
+                          </div>
                           <h3 
                             style={{ 
                               margin: 0, 
                               color: COLORS.navy, 
-                              fontSize: 13, 
+                              fontSize: 16, 
                               fontWeight: 900, 
+                              letterSpacing: "-0.02em"
                             }} 
                           > 
-                            {order.ngoName || "Community Partner"} 
+                            {order.foodRequested || "Surplus Meal Package"} 
                           </h3> 
-
-                          <p 
-                            style={{ 
-                              margin: "3px 0 0", 
-                              color: COLORS.muted, 
-                              fontSize: 10, 
-                            }} 
-                          > 
-                            {order.foodRequested} 
-                          </p> 
                         </div> 
 
                         <StatusBadge status={order.status} /> 
                       </div> 
 
-                      {/* PROGRESS */} 
-                      <div 
-                        style={{ 
-                          display: "grid", 
-                          gridTemplateColumns: "repeat(5,1fr)", 
-                          gap: 4, 
-                          marginTop: 18, 
-                        }} 
-                      > 
-                        {orderSteps.map((step, index) => { 
-                          const active = index <= currentIndex; 
+                      {/* PROGRESS BAR */} 
+                      <div style={{ marginTop: 2, marginBottom: 2 }}> 
+                        <div 
+                          style={{ 
+                            display: "grid", 
+                            gridTemplateColumns: "repeat(5, 1fr)", 
+                            gap: 6, 
+                          }} 
+                        > 
+                          {orderSteps.map((step, index) => { 
+                            const active = index <= currentIndex; 
 
-                          return ( 
-                            <div key={step}> 
-                              <div 
-                                style={{ 
-                                  height: 5, 
-                                  borderRadius: 999, 
-                                  background: active ? COLORS.green : "#E8EFEE", 
-                                }} 
-                              /> 
+                            return ( 
+                              <div key={step}> 
+                                <div 
+                                  style={{ 
+                                    height: 6, 
+                                    borderRadius: 999, 
+                                    background: active 
+                                      ? "linear-gradient(90deg, #08A979, #10B9A4)" 
+                                      : "#E8F0ED", 
+                                    boxShadow: active ? "0 1px 4px rgba(8,169,121,0.25)" : "none"
+                                  }} 
+                                /> 
 
-                              <span 
-                                style={{ 
-                                  display: "block", 
-                                  marginTop: 5, 
-                                  color: active ? COLORS.greenDark : "#9AAAB6", 
-                                  fontSize: 7, 
-                                  lineHeight: 1.25, 
-                                  fontWeight: 800, 
-                                }} 
-                              > 
-                                {step === "Ready for Pickup" 
-                                  ? "READY" 
-                                  : step === "Picked Up" 
-                                  ? "PICKED" 
-                                  : step.toUpperCase()} 
-                              </span> 
-                            </div> 
-                          ); 
-                        })} 
+                                <span 
+                                  style={{ 
+                                    display: "block", 
+                                    marginTop: 6, 
+                                    color: active ? COLORS.greenDark : "#94A3B8", 
+                                    fontSize: 8, 
+                                    lineHeight: 1.2, 
+                                    fontWeight: active ? 850 : 700, 
+                                    textAlign: "center"
+                                  }} 
+                                > 
+                                  {step === "Ready for Pickup" 
+                                    ? "READY" 
+                                    : step === "Picked Up" 
+                                    ? "PICKED" 
+                                    : step.toUpperCase()} 
+                                </span> 
+                              </div> 
+                            ); 
+                          })} 
+                        </div> 
                       </div> 
 
+                      {/* CHIPS */}
                       <div 
                         style={{ 
                           display: "grid", 
-                          gridTemplateColumns: "repeat(3,1fr)", 
-                          gap: 7, 
-                          marginTop: 15, 
+                          gridTemplateColumns: "repeat(3, 1fr)", 
+                          gap: 8, 
                         }} 
                       > 
                         <InfoMini 
+                          icon={<Utensils size={13} color="#08A979" />}
                           label="Quantity" 
                           value={`${order.quantity || order.expectedPeople || 0} portions`} 
                         /> 
 
                         <InfoMini 
+                          icon={<Clock size={13} color="#08A979" />}
                           label="Prep Time" 
-                          value={order.prepTime || "Not set"} 
+                          value={order.prepTime || "30 Mins"} 
                         /> 
 
                         <InfoMini 
+                          icon={<Users size={13} color="#08A979" />}
                           label="Contact" 
-                          value={order.contactPerson || "—"} 
+                          value={order.contactPerson || "Sneha"} 
                         /> 
                       </div> 
 
+                      {/* ACTIONS ROW */}
                       <div 
                         style={{ 
                           display: "flex", 
-                          gap: 7, 
-                          marginTop: 13, 
+                          alignItems: "center",
+                          gap: 8, 
+                          marginTop: "auto",
+                          paddingTop: 8,
+                          borderTop: "1px solid #F1F5F3",
                           flexWrap: "wrap", 
                         }} 
                       > 
                         {order.status === "Accepted" && ( 
                           <WorkflowButton onClick={() => updateOrderStatus(order.id, "Preparing")}> 
-                            Start Preparing 
+                            <Sparkles size={12} /> Start Preparing 
                           </WorkflowButton> 
                         )} 
 
                         {order.status === "Preparing" && ( 
                           <WorkflowButton onClick={() => updateOrderStatus(order.id, "Ready for Pickup")}> 
-                            Mark Ready 
+                            <CheckCircle2 size={12} /> Mark Ready 
                           </WorkflowButton> 
                         )} 
 
                         {order.status === "Ready for Pickup" && ( 
                           <WorkflowButton onClick={() => updateOrderStatus(order.id, "Picked Up")}> 
-                            Mark Picked Up 
+                            <Truck size={12} /> Mark Picked Up 
                           </WorkflowButton> 
                         )} 
 
                         {order.status === "Picked Up" && ( 
                           <WorkflowButton onClick={() => updateOrderStatus(order.id, "Completed")}> 
-                            Complete Order 
+                            <CheckCircle2 size={12} /> Complete Order 
                           </WorkflowButton> 
                         )} 
 
                         {order.status === "Completed" && ( 
                           <span 
                             style={{ 
-                              padding: "9px 12px", 
+                              display: "inline-flex", 
+                              alignItems: "center", 
+                              gap: 6, 
+                              padding: "8px 14px", 
                               borderRadius: 999, 
-                              background: "#EAF9F4", 
-                              color: COLORS.greenDark, 
-                              fontSize: 10, 
+                              background: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)", 
+                              border: "1px solid #A7F3D0", 
+                              color: "#065F46", 
+                              fontSize: 11, 
                               fontWeight: 850, 
+                              boxShadow: "0 2px 8px rgba(16,185,129,0.14)" 
                             }} 
                           > 
-                            ✓ Successfully Delivered 
+                            <CheckCircle2 size={13} color="#059669" /> 
+                            Successfully Delivered 
                           </span> 
                         )} 
 
@@ -3570,7 +3632,10 @@ export default function DonorDashboard() {
                           style={{ 
                             ...secondaryButton, 
                             marginLeft: "auto", 
-                            padding: "9px 12px", 
+                            padding: "8px 14px", 
+                            borderRadius: 10,
+                            fontSize: 11,
+                            fontWeight: 800
                           }} 
                         > 
                           Details 
@@ -4547,11 +4612,13 @@ function DonationCard({
     <article 
       style={{ 
         background: "#FFFFFF", 
-        border: "1px solid #E4EEEC", 
-        borderRadius: 18, 
+        border: "1px solid #E2EEE9", 
+        borderRadius: 22, 
         overflow: "hidden", 
-        boxShadow: 
-          "0 8px 28px rgba(16,72,64,.045)", 
+        boxShadow: "0 4px 20px -2px rgba(8,169,121,0.06), 0 2px 6px rgba(0,0,0,0.02)", 
+        transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+        display: "flex",
+        flexDirection: "column",
       }} 
     > 
       <div 
@@ -4576,8 +4643,7 @@ function DonationCard({
           style={{ 
             position: "absolute", 
             inset: 0, 
-            background: 
-              "linear-gradient(0deg,rgba(0,0,0,.5),transparent 62%)", 
+            background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.7) 100%)", 
           }} 
         /> 
  
@@ -4586,23 +4652,18 @@ function DonationCard({
             position: "absolute", 
             top: 12, 
             left: 12, 
-            padding: "5px 8px", 
+            padding: "5px 10px", 
             borderRadius: 999, 
-            background: 
-              item.vegNonVeg === "Veg" 
-                ? "rgba(232,250,242,.96)" 
-                : "rgba(255,238,238,.96)", 
-            color: 
-              item.vegNonVeg === "Veg" 
-                ? "#078C63" 
-                : "#CF4B4B", 
-            fontSize: 8, 
+            background: item.vegNonVeg === "Veg" ? "rgba(240,253,244,0.95)" : "rgba(254,242,242,0.95)", 
+            color: item.vegNonVeg === "Veg" ? "#166534" : "#991B1B", 
+            border: item.vegNonVeg === "Veg" ? "1px solid #BBF7D0" : "1px solid #FECACA",
+            fontSize: 9, 
             fontWeight: 900, 
+            letterSpacing: "0.05em",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.06)"
           }} 
         > 
-          {item.vegNonVeg === "Veg" 
-            ? "● VEG" 
-            : "● NON-VEG"} 
+          {item.vegNonVeg === "Veg" ? "🟢 VEG" : "🔴 NON-VEG"} 
         </span> 
  
         <span 
@@ -4610,23 +4671,24 @@ function DonationCard({
             position: "absolute", 
             top: 12, 
             right: 12, 
-            padding: "5px 8px", 
+            padding: "5px 10px", 
             borderRadius: 999, 
-            background: 
-              "rgba(255,255,255,.94)", 
-            color: "#28445A", 
-            fontSize: 8, 
+            background: "rgba(255,255,255,0.95)", 
+            color: "#1E293B", 
+            border: "1px solid rgba(226,232,240,0.8)",
+            fontSize: 9, 
             fontWeight: 850, 
+            boxShadow: "0 2px 6px rgba(0,0,0,0.06)"
           }} 
         > 
-          {item.category} 
+          {item.category || "Cooked Meals"} 
         </span> 
  
         <div 
           style={{ 
             position: "absolute", 
-            left: 13, 
-            right: 13, 
+            left: 14, 
+            right: 14, 
             bottom: 12, 
             display: "flex", 
             alignItems: "flex-end", 
@@ -4637,22 +4699,21 @@ function DonationCard({
           <div style={{ minWidth: 0 }}> 
             <div 
               style={{ 
-                color: "#FFFFFF", 
-                fontSize: 8, 
-                fontWeight: 800, 
-                opacity: 0.8, 
+                color: "#A7F3D0", 
+                fontSize: 9, 
+                fontWeight: 850, 
                 textTransform: "uppercase", 
-                letterSpacing: ".1em", 
+                letterSpacing: ".12em", 
               }} 
             > 
-              Donation 
+              Surplus Donation 
             </div> 
  
             <h3 
               style={{ 
-                margin: "3px 0 0", 
+                margin: "2px 0 0", 
                 color: "#FFFFFF", 
-                fontSize: 15, 
+                fontSize: 16, 
                 fontWeight: 900, 
                 letterSpacing: "-.02em", 
                 whiteSpace: "nowrap", 
@@ -4664,36 +4725,34 @@ function DonationCard({
             </h3> 
           </div> 
  
-          <StatusBadge 
-            status={item.status || "Available"} 
-          /> 
+          <StatusBadge status={item.status || "Available"} /> 
         </div> 
       </div> 
  
-      <div style={{ padding: 15 }}> 
+      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column" }}> 
         <div 
           style={{ 
             display: "grid", 
             gridTemplateColumns: "1fr 1fr", 
-            gap: 7, 
+            gap: 8, 
           }} 
         > 
           <InfoMini 
+            icon={<Utensils size={13} color="#08A979" />}
             label="Quantity" 
             value={`${item.quantity || 0} meals`} 
           /> 
  
           <InfoMini 
-            label="Cooking" 
+            icon={<Clock size={13} color="#08A979" />}
+            label="Cooking Time" 
             value={ 
               item.cookingTime 
-                ? new Date( 
-                    item.cookingTime 
-                  ).toLocaleTimeString([], { 
+                ? new Date(item.cookingTime).toLocaleTimeString([], { 
                     hour: "2-digit", 
                     minute: "2-digit", 
                   }) 
-                : "N/A" 
+                : "Just now" 
             } 
           /> 
         </div> 
@@ -4701,21 +4760,22 @@ function DonationCard({
         <div 
           style={{ 
             display: "grid", 
-            gridTemplateColumns: 
-              "1.3fr 1fr 1fr", 
+            gridTemplateColumns: "1.3fr 1fr 1fr", 
             gap: 6, 
-            marginTop: 10, 
+            marginTop: 14, 
           }} 
         > 
           <button 
             onClick={onDetails} 
             style={{ 
               ...buttonBase, 
-              padding: "9px 6px", 
-              borderRadius: 10, 
-              background: "#EAF9F4", 
-              color: "#058E72", 
-              fontSize: 9, 
+              padding: "9px 8px", 
+              borderRadius: 12, 
+              background: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)", 
+              border: "1px solid #A7F3D0",
+              color: "#065F46", 
+              fontSize: 10, 
+              fontWeight: 850,
             }} 
           > 
             View Details 
@@ -4725,11 +4785,13 @@ function DonationCard({
             onClick={onEdit} 
             style={{ 
               ...buttonBase, 
-              padding: "9px 6px", 
-              borderRadius: 10, 
-              background: "#F1F6F7", 
-              color: "#456175", 
-              fontSize: 9, 
+              padding: "9px 8px", 
+              borderRadius: 12, 
+              background: "#F8FAFC", 
+              border: "1px solid #E2E8F0",
+              color: "#475569", 
+              fontSize: 10, 
+              fontWeight: 800,
             }} 
           > 
             Edit 
@@ -4739,11 +4801,13 @@ function DonationCard({
             onClick={onDelete} 
             style={{ 
               ...buttonBase, 
-              padding: "9px 6px", 
-              borderRadius: 10, 
-              background: "#FFF1F1", 
-              color: "#CF5555", 
-              fontSize: 9, 
+              padding: "9px 8px", 
+              borderRadius: 12, 
+              background: "#FEF2F2", 
+              border: "1px solid #FECACA",
+              color: "#DC2626", 
+              fontSize: 10, 
+              fontWeight: 800,
             }} 
           > 
             Delete 
@@ -4768,22 +4832,24 @@ function SummaryRow({
       style={{ 
         display: "flex", 
         alignItems: "center", 
-        gap: 9, 
-        padding: "8px 9px", 
-        borderRadius: 10, 
+        gap: 10, 
+        padding: "10px 12px", 
+        borderRadius: 14, 
         background: "#FFFFFF", 
-        border: "1px solid #EDF3F1", 
+        border: "1px solid #E8F2EE", 
+        boxShadow: "0 2px 6px rgba(0,0,0,0.015)"
       }} 
     > 
       <span 
         style={{ 
-          width: 27, 
-          height: 27, 
+          width: 30, 
+          height: 30, 
           display: "grid", 
           placeItems: "center", 
-          borderRadius: 8, 
+          borderRadius: 10, 
           background: "#EAF9F4", 
-          fontSize: 12, 
+          color: "#08A979",
+          fontSize: 13, 
         }} 
       > 
         {icon} 
@@ -4791,8 +4857,8 @@ function SummaryRow({
  
       <span 
         style={{ 
-          color: "#71869A", 
-          fontSize: 9, 
+          color: "#64748B", 
+          fontSize: 10, 
           fontWeight: 750, 
         }} 
       > 
@@ -4803,7 +4869,7 @@ function SummaryRow({
         style={{ 
           marginLeft: "auto", 
           color: COLORS.navy, 
-          fontSize: 11, 
+          fontSize: 12, 
           fontWeight: 900, 
         }} 
       > 
@@ -4818,6 +4884,7 @@ function SummaryRow({
    ========================================================= */ 
  
 function InfoMini({ 
+  icon,
   label, 
   value, 
 }) { 
@@ -4825,38 +4892,61 @@ function InfoMini({
     <div 
       style={{ 
         minWidth: 0, 
-        padding: "9px 10px", 
-        borderRadius: 10, 
-        background: "#F7FAFA", 
-        border: "1px solid #EEF3F2", 
+        padding: "10px 12px", 
+        borderRadius: 14, 
+        background: "linear-gradient(135deg, #F8FAF9 0%, #FFFFFF 100%)", 
+        border: "1px solid #E4EFEA", 
+        display: "flex",
+        alignItems: "center",
+        gap: 9,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
       }} 
     > 
-      <span 
-        style={{ 
-          display: "block", 
-          color: "#91A0AE", 
-          fontSize: 8, 
-          fontWeight: 850, 
-          textTransform: "uppercase", 
-          letterSpacing: ".03em", 
-        }} 
-      > 
-        {label} 
-      </span> 
+      {icon && (
+        <span 
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: 8,
+            background: "#EAF9F4",
+            color: "#08A979",
+            display: "grid",
+            placeItems: "center",
+            flexShrink: 0
+          }}
+        >
+          {icon}
+        </span>
+      )}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <span 
+          style={{ 
+            display: "block", 
+            color: "#64748B", 
+            fontSize: 8.5, 
+            fontWeight: 850, 
+            textTransform: "uppercase", 
+            letterSpacing: ".06em", 
+          }} 
+        > 
+          {label} 
+        </span> 
  
-      <strong 
-        style={{ 
-          display: "block", 
-          marginTop: 3, 
-          color: "#29445A", 
-          fontSize: 9, 
-          whiteSpace: "nowrap", 
-          overflow: "hidden", 
-          textOverflow: "ellipsis", 
-        }} 
-      > 
-        {value || "—"} 
-      </strong> 
+        <strong 
+          style={{ 
+            display: "block", 
+            marginTop: 2, 
+            color: COLORS.navy, 
+            fontSize: 11, 
+            fontWeight: 850,
+            whiteSpace: "nowrap", 
+            overflow: "hidden", 
+            textOverflow: "ellipsis", 
+          }} 
+        > 
+          {value || "—"} 
+        </strong> 
+      </div>
     </div> 
   ); 
 } 
