@@ -579,7 +579,7 @@ export default function DonorDashboard() {
   }, [rawDonations]);
 
   const allOrders =
-    Array.isArray(orders) && orders.length > 0
+    Array.isArray(orders)
       ? orders
       : demoOrders;
 
@@ -3023,9 +3023,9 @@ export default function DonorDashboard() {
               <div 
                 style={{ 
                   ...cardStyle, 
-                  padding: "48px 25px", 
+                  padding: "54px 25px", 
                   textAlign: "center", 
-                  minHeight: 250,
+                  minHeight: 270,
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -3034,43 +3034,55 @@ export default function DonorDashboard() {
               > 
                 <div 
                   style={{ 
-                    width: 58, 
-                    height: 58, 
-                    margin: "0 auto 12px", 
+                    width: 64, 
+                    height: 64, 
+                    margin: "0 auto 15px", 
                     display: "grid", 
                     placeItems: "center", 
-                    borderRadius: 18, 
+                    borderRadius: 20, 
                     background: "#EAF9F4", 
                     color: COLORS.greenDark, 
-                    fontSize: 24, 
+                    fontSize: 28, 
                     fontWeight: 900, 
                   }} 
                 > 
-                  ✓ 
+                  📥 
                 </div> 
 
                 <h3 
                   style={{ 
-                    margin: "0 0 6px", 
+                    margin: "0 0 8px", 
                     color: COLORS.navy, 
-                    fontSize: 16, 
+                    fontSize: 17, 
                     fontWeight: 900, 
                   }} 
                 > 
-                  All caught up 
+                  No incoming requests right now 
                 </h3> 
 
                 <p 
                   style={{ 
-                    maxWidth: 400, 
-                    margin: "0 auto", 
+                    maxWidth: 440, 
+                    margin: "0 auto 18px", 
                     color: COLORS.muted, 
                     fontSize: 12, 
                     lineHeight: 1.6, 
                   }} 
                 > 
-                  No NGO requests are waiting for your response right now. New requests will appear here when shelters request food.
+                  There are currently no food requests waiting for your response. When verified community shelters or NGO partners request food from your listings, they will appear here immediately. 
                 </p> 
+
+                <button 
+                  onClick={() => navigate("/donor-dashboard/listings")} 
+                  style={{ 
+                    ...primaryButton, 
+                    padding: "10px 20px", 
+                    borderRadius: 10, 
+                    fontSize: 12, 
+                  }} 
+                > 
+                  View My Listings → 
+                </button> 
               </div> 
             ) : ( 
               <div 
