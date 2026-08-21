@@ -3558,7 +3558,7 @@ export default function DonorDashboard() {
                               fontWeight: 850, 
                             }} 
                           > 
-                            ✓ Successfully Rescued 
+                            ✓ Successfully Delivered 
                           </span> 
                         )} 
 
