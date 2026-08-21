@@ -1020,11 +1020,6 @@ export default function DonorDashboard() {
  
     setIsAcceptOpen(false); 
     setSelectedOrderId(null); 
- 
-    showToast( 
-      "Request accepted successfully.", 
-      "success" 
-    ); 
   }; 
  
   const triggerDecline = (orderId) => { 

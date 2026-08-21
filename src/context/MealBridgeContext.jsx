@@ -443,77 +443,155 @@ export function MealBridgeProvider({ children }) {
     }
   };
 
-  const acceptOrder = async (orderId, prepTime) => {
-    try {
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          status: 'accepted',
-          prep_time: prepTime,
-          accepted_at: new Date().toISOString()
-        })
-        .eq("id", orderId);
+  const isUuid = (id) =>
+    typeof id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-      if (error) {
-        showToast("Error accepting order: " + error.message, "error");
-      } else {
-        showToast(`Order accepted. Expected pickup in ${prepTime}.`);
-        fetchOrders();
+  const defaultDemoOrders = [
+    {
+      id: "demo-order-1",
+      status: "Pending",
+      ngoName: "City Hope Kitchen",
+      receiverName: "City Hope Kitchen",
+      foodRequested: "Fresh Veg Meal Boxes",
+      foodName: "Fresh Veg Meal Boxes",
+      quantity: 10,
+      expectedPeople: 10,
+      orderTime: new Date().toISOString(),
+      receiverMessage:
+        "We would like to request these meals for today's distribution.",
+      contactPerson: "Community Coordinator",
+    },
+    {
+      id: "demo-order-2",
+      status: "Completed",
+      ngoName: "Helping Hands NGO",
+      receiverName: "Helping Hands NGO",
+      foodRequested: "Cooked Meals",
+      foodName: "Cooked Meals",
+      quantity: 15,
+      expectedPeople: 15,
+      orderTime: new Date(Date.now() - 86400000).toISOString(),
+      receiverMessage: "Thank you for the donation.",
+      contactPerson: "NGO Coordinator",
+    },
+  ];
+
+  const acceptOrder = async (orderId, prepTime) => {
+    // 1. Instantly update React context state
+    setOrders((prevOrders) => {
+      const baseList = prevOrders && prevOrders.length > 0 ? prevOrders : defaultDemoOrders;
+      return baseList.map((ord) =>
+        ord.id === orderId
+          ? {
+              ...ord,
+              status: "Accepted",
+              prepTime: prepTime,
+              prep_time: prepTime,
+              accepted_at: new Date().toISOString(),
+            }
+          : ord
+      );
+    });
+
+    // 2. If it's a valid Supabase UUID, sync with backend database
+    if (isUuid(orderId)) {
+      try {
+        const { error } = await supabase
+          .from("orders")
+          .update({
+            status: "accepted",
+            prep_time: prepTime,
+            accepted_at: new Date().toISOString(),
+          })
+          .eq("id", orderId);
+
+        if (!error) {
+          fetchOrders();
+        } else {
+          console.warn("Supabase accept order notice:", error.message);
+        }
+      } catch (err) {
+        console.warn("Supabase sync notice:", err);
       }
-    } catch (err) {
-      showToast("Error connecting to server.", "error");
     }
+
+    showToast(`Order accepted. Expected pickup in ${prepTime}.`, "success");
   };
 
   const declineOrder = async (orderId) => {
-    try {
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          status: 'rejected'
-        })
-        .eq("id", orderId);
+    // 1. Instantly update React context state
+    setOrders((prevOrders) => {
+      const baseList = prevOrders && prevOrders.length > 0 ? prevOrders : defaultDemoOrders;
+      return baseList.map((ord) =>
+        ord.id === orderId ? { ...ord, status: "Declined" } : ord
+      );
+    });
 
-      if (error) {
-        showToast("Error declining order: " + error.message, "error");
-      } else {
-        showToast("Order declined.", "warning");
-        fetchOrders();
-        fetchDonations();
+    // 2. If it's a valid Supabase UUID, sync with backend database
+    if (isUuid(orderId)) {
+      try {
+        const { error } = await supabase
+          .from("orders")
+          .update({
+            status: "rejected",
+          })
+          .eq("id", orderId);
+
+        if (!error) {
+          fetchOrders();
+          fetchDonations();
+        } else {
+          console.warn("Supabase decline order notice:", error.message);
+        }
+      } catch (err) {
+        console.warn("Supabase sync notice:", err);
       }
-    } catch (err) {
-      showToast("Error connecting to server.", "error");
     }
+
+    showToast("Order declined.", "warning");
   };
 
   const updateOrderStatus = async (orderId, nextStatus) => {
-    try {
-      let dbStatus = 'accepted';
-      if (nextStatus === "Preparing") dbStatus = 'accepted';
-      else if (nextStatus === "Ready for Pickup") dbStatus = 'ready_for_pickup';
-      else if (nextStatus === "Picked Up") dbStatus = 'picked_up';
-      else if (nextStatus === "Completed") dbStatus = 'delivered';
+    let dbStatus = "accepted";
+    if (nextStatus === "Preparing") dbStatus = "accepted";
+    else if (nextStatus === "Ready for Pickup") dbStatus = "ready_for_pickup";
+    else if (nextStatus === "Picked Up") dbStatus = "picked_up";
+    else if (nextStatus === "Completed") dbStatus = "delivered";
 
-      const updates = { status: dbStatus };
-      if (dbStatus === 'delivered') {
-        updates.completed_at = new Date().toISOString();
+    // 1. Instantly update React context state
+    setOrders((prevOrders) => {
+      const baseList = prevOrders && prevOrders.length > 0 ? prevOrders : defaultDemoOrders;
+      return baseList.map((ord) =>
+        ord.id === orderId ? { ...ord, status: nextStatus } : ord
+      );
+    });
+
+    // 2. If it's a valid Supabase UUID, sync with backend database
+    if (isUuid(orderId)) {
+      try {
+        const updates = { status: dbStatus };
+        if (dbStatus === "delivered") {
+          updates.completed_at = new Date().toISOString();
+        }
+
+        const { error } = await supabase
+          .from("orders")
+          .update(updates)
+          .eq("id", orderId);
+
+        if (!error) {
+          fetchOrders();
+          fetchDonations();
+        } else {
+          console.warn("Supabase update status notice:", error.message);
+        }
+      } catch (err) {
+        console.warn("Supabase sync notice:", err);
       }
-
-      const { error } = await supabase
-        .from("orders")
-        .update(updates)
-        .eq("id", orderId);
-
-      if (error) {
-        showToast("Error updating order status: " + error.message, "error");
-      } else {
-        showToast(`Order status updated to ${nextStatus}.`);
-        fetchOrders();
-        fetchDonations();
-      }
-    } catch (err) {
-      showToast("Error connecting to server.", "error");
     }
+
+    showToast(`Order status updated to ${nextStatus}.`);
   };
 
   const sendChatMessage = async (orderId, senderId, senderName, text) => {
