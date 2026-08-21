@@ -1097,45 +1097,7 @@ export default function DonorDashboard() {
       > 
         {/* ===================================================== 
             ROUTE-BASED DISPLAY
-            ===================================================== */} 
-        <style>{`
-          ${!isOverview ? `
-            .dashboard-top-header,
-            .donor-hero-section,
-            .donor-kpi-grid,
-            .impact-summary-section,
-            #active-listings,
-            #incoming-requests,
-            #live-workflow,
-            .impact-strip,
-            #past-donations {
-              display: none !important;
-            }
-          ` : `
-            /* Overview shows everything except maybe specific detailed views if we want */
-            #past-donations { display: none !important; }
-          `}
 
-          ${isListings ? `
-            .dashboard-top-header, #active-listings { display: flex !important; }
-            #active-listings { display: block !important; }
-          ` : ''}
-
-          ${isRequests ? `
-            .dashboard-top-header, #incoming-requests { display: flex !important; }
-            #incoming-requests { display: block !important; }
-          ` : ''}
-
-          ${isHistory ? `
-            .dashboard-top-header, #past-donations { display: flex !important; }
-            #past-donations { display: block !important; }
-          ` : ''}
-
-          ${isDelivery ? `
-            .dashboard-top-header, #live-workflow { display: flex !important; }
-            #live-workflow { display: block !important; }
-          ` : ''}
-        `}</style>
 
         {/* ===================================================== 
             1. NOTIFICATIONS PAGE
@@ -2016,8 +1978,10 @@ export default function DonorDashboard() {
             HERO / OVERVIEW BANNER 
             ===================================================== */} 
  
-        <section 
-          className="donor-hero-section" 
+        {isOverview && (
+          <>
+            <section 
+              className="donor-hero-section" 
           style={{ 
             ...cardStyle, 
             minHeight: 205, 
@@ -2897,164 +2861,716 @@ export default function DonorDashboard() {
             </div> 
           </div> 
         </section> 
- 
- 
- 
+        </>
+        )}
+
         {/* ===================================================== 
-            DONATIONS 
+            2. MY LISTINGS (FOOD INVENTORY)
             ===================================================== */} 
- 
-        <section 
-          id="active-listings" 
-          style={{ 
-            marginBottom: 30, 
-          }} 
-        > 
-          <SectionHeader 
-            eyebrow="Food Inventory" 
-            title="My Registered Donations" 
-            description="Manage the surplus meals currently available for community rescue." 
-            action={ 
-              <button 
-                onClick={() => { 
-                  resetForm(); 
-                  setIsRegisterOpen(true); 
-                }} 
-                style={primaryButton} 
-              > 
-                + Register Food 
-              </button> 
-            } 
-          /> 
- 
-          {myDonations.length === 0 ? ( 
-            <div 
-              style={{ 
-                ...cardStyle, 
-                padding: "48px 25px", 
-                textAlign: "center", 
-              }} 
-            > 
+        {isListings && (
+          <section 
+            id="active-listings" 
+            style={{ 
+              marginBottom: 30, 
+            }} 
+          > 
+            <SectionHeader 
+              eyebrow="Food Inventory" 
+              title="My Registered Donations" 
+              description="Manage the surplus meals currently available for community rescue." 
+              action={ 
+                <button 
+                  onClick={() => { 
+                    resetForm(); 
+                    setIsRegisterOpen(true); 
+                  }} 
+                  style={primaryButton} 
+                > 
+                  + Register Food 
+                </button> 
+              } 
+            /> 
+
+            {myDonations.length === 0 ? ( 
               <div 
                 style={{ 
-                  width: 60, 
-                  height: 60, 
-                  margin: "0 auto 13px", 
-                  display: "grid", 
-                  placeItems: "center", 
-                  borderRadius: 18, 
-                  background: "#EAF9F4", 
-                  fontSize: 27, 
+                  ...cardStyle, 
+                  padding: "48px 25px", 
+                  textAlign: "center", 
                 }} 
               > 
-                🍲 
-              </div> 
- 
-              <h3 
-                style={{ 
-                  margin: 0, 
-                  color: COLORS.navy, 
-                  fontSize: 15, 
-                  fontWeight: 900, 
-                }} 
-              > 
-                Your food inventory is empty 
-              </h3> 
- 
-              <p 
-                style={{ 
-                  maxWidth: 420, 
-                  margin: "6px auto 15px", 
-                  color: COLORS.muted, 
-                  fontSize: 11, 
-                  lineHeight: 1.6, 
-                }} 
-              > 
-                Register your first surplus meal 
-                and make it available to verified 
-                community partners. 
-              </p> 
- 
-              <button 
-                onClick={() => { 
-                  resetForm(); 
-                  setIsRegisterOpen(true); 
-                }} 
-                style={{ 
-                  ...primaryButton, 
-                  borderRadius: 999, 
-                }} 
-              > 
-                Register First Donation 
-              </button> 
-            </div> 
-          ) : ( 
-            <div 
-              className="donation-grid" 
-              style={{ 
-                display: "grid", 
-                gridTemplateColumns: 
-                  "repeat(3,minmax(0,1fr))", 
-                gap: 14, 
-              }} 
-            > 
-              {myDonations.map((item) => ( 
-                <DonationCard 
-                  key={item.id} 
-                  item={item} 
-                  onDetails={() => 
-                    openDetailsModal(item) 
-                  } 
-                  onEdit={() => 
-                    openEditModal(item) 
-                  } 
-                  onDelete={() => { 
-                    if ( 
-                      window.confirm( 
-                        `Are you sure you want to delete "${item.name}"?` 
-                      ) 
-                    ) { 
-                      deleteFood(item.id); 
-                    } 
+                <div 
+                  style={{ 
+                    width: 60, 
+                    height: 60, 
+                    margin: "0 auto 13px", 
+                    display: "grid", 
+                    placeItems: "center", 
+                    borderRadius: 18, 
+                    background: "#EAF9F4", 
+                    fontSize: 27, 
                   }} 
-                /> 
-              ))} 
-            </div> 
-          )} 
-        </section> 
- 
-                {/* ===================================================== 
-            PAST DONATIONS (ORDER HISTORY)
-            ===================================================== */}
-        <section id="past-donations" style={{ marginBottom: 30 }}>
-          <SectionHeader 
-            eyebrow="History" 
-            title="Order History" 
-            description="View your past, completed, and cancelled donations." 
-          />
-          {completedOrders.length === 0 ? (
-            <div style={{ ...cardStyle, padding: "36px 25px", textAlign: "center" }}>
-              <div style={{ fontSize: 28, marginBottom: 7 }}>📦</div>
-              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: COLORS.navy }}>No completed orders yet</h3>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 }}>
-              {completedOrders.map(order => (
-                <article key={order.id} style={{ ...cardStyle, padding: 18, borderLeft: `4px solid ${COLORS.green}` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                    <h3 style={{ margin: 0, color: COLORS.navy, fontSize: 13, fontWeight: 900 }}>{order.ngoName || "Community Partner"}</h3>
-                    <StatusBadge status={order.status} />
-                  </div>
-                  <p style={{ margin: "0 0 10px", color: COLORS.muted, fontSize: 11 }}>{order.foodRequested}</p>
-                  <div style={{ display: "flex", gap: 15, fontSize: 10, color: COLORS.muted }}>
-                    <span><strong>Qty:</strong> {order.quantity || order.expectedPeople || 0} portions</span>
-                    <span><strong>Date:</strong> {order.orderTime ? new Date(order.orderTime).toLocaleDateString() : "—"}</span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
+                > 
+                  🍲 
+                </div> 
+
+                <h3 
+                  style={{ 
+                    margin: 0, 
+                    color: COLORS.navy, 
+                    fontSize: 15, 
+                    fontWeight: 900, 
+                  }} 
+                > 
+                  Your food inventory is empty 
+                </h3> 
+
+                <p 
+                  style={{ 
+                    maxWidth: 420, 
+                    margin: "6px auto 15px", 
+                    color: COLORS.muted, 
+                    fontSize: 11, 
+                    lineHeight: 1.6, 
+                  }} 
+                > 
+                  Register your first surplus meal 
+                  and make it available to verified 
+                  community partners. 
+                </p> 
+
+                <button 
+                  onClick={() => { 
+                    resetForm(); 
+                    setIsRegisterOpen(true); 
+                  }} 
+                  style={{ 
+                    ...primaryButton, 
+                    borderRadius: 999, 
+                  }} 
+                > 
+                  Register First Donation 
+                </button> 
+              </div> 
+            ) : ( 
+              <div 
+                className="donation-grid" 
+                style={{ 
+                  display: "grid", 
+                  gridTemplateColumns: 
+                    "repeat(3,minmax(0,1fr))", 
+                  gap: 14, 
+                }} 
+              > 
+                {myDonations.map((item) => ( 
+                  <DonationCard 
+                    key={item.id} 
+                    item={item} 
+                    onDetails={() => 
+                      openDetailsModal(item) 
+                    } 
+                    onEdit={() => 
+                      openEditModal(item) 
+                    } 
+                    onDelete={() => { 
+                      if ( 
+                        window.confirm( 
+                          `Are you sure you want to delete "${item.name}"?` 
+                        ) 
+                      ) { 
+                        deleteFood(item.id); 
+                      } 
+                    }} 
+                  /> 
+                ))} 
+              </div> 
+            )} 
+          </section> 
+        )}
+
+        {/* ===================================================== 
+            3. INCOMING NGO REQUESTS
+            ===================================================== */} 
+        {isRequests && (
+          <section id="incoming-requests" style={{ marginBottom: 30 }}>
+            <SectionHeader 
+              eyebrow="Requires Attention" 
+              title="Incoming NGO Requests" 
+              description="Review and respond to food requests from verified shelters and community partners." 
+              action={ 
+                <span 
+                  style={{ 
+                    padding: "6px 12px", 
+                    borderRadius: 999, 
+                    background: 
+                      incomingRequests.length > 0 
+                        ? "#FFF7E8" 
+                        : "#EAF9F4", 
+                    color: 
+                      incomingRequests.length > 0 
+                        ? COLORS.warning 
+                        : COLORS.greenDark, 
+                    fontSize: 10, 
+                    fontWeight: 900, 
+                  }} 
+                > 
+                  {incomingRequests.length} Pending 
+                </span> 
+              } 
+            /> 
+
+            {incomingRequests.length === 0 ? ( 
+              <div 
+                style={{ 
+                  ...cardStyle, 
+                  padding: "48px 25px", 
+                  textAlign: "center", 
+                  minHeight: 250,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }} 
+              > 
+                <div 
+                  style={{ 
+                    width: 58, 
+                    height: 58, 
+                    margin: "0 auto 12px", 
+                    display: "grid", 
+                    placeItems: "center", 
+                    borderRadius: 18, 
+                    background: "#EAF9F4", 
+                    color: COLORS.greenDark, 
+                    fontSize: 24, 
+                    fontWeight: 900, 
+                  }} 
+                > 
+                  ✓ 
+                </div> 
+
+                <h3 
+                  style={{ 
+                    margin: "0 0 6px", 
+                    color: COLORS.navy, 
+                    fontSize: 16, 
+                    fontWeight: 900, 
+                  }} 
+                > 
+                  All caught up 
+                </h3> 
+
+                <p 
+                  style={{ 
+                    maxWidth: 400, 
+                    margin: "0 auto", 
+                    color: COLORS.muted, 
+                    fontSize: 12, 
+                    lineHeight: 1.6, 
+                  }} 
+                > 
+                  No NGO requests are waiting for your response right now. New requests will appear here when shelters request food.
+                </p> 
+              </div> 
+            ) : ( 
+              <div 
+                style={{ 
+                  display: "grid", 
+                  gap: 12, 
+                }} 
+              > 
+                {incomingRequests.map((order) => ( 
+                  <article 
+                    key={order.id} 
+                    style={{ 
+                      ...cardStyle, 
+                      padding: 18, 
+                      borderLeft: "4px solid #10B981", 
+                    }} 
+                  > 
+                    <div 
+                      style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "space-between", 
+                        gap: 12, 
+                      }} 
+                    > 
+                      <div 
+                        style={{ 
+                          display: "flex", 
+                          alignItems: "center", 
+                          gap: 12, 
+                        }} 
+                      > 
+                        <div 
+                          style={{ 
+                            width: 42, 
+                            height: 42, 
+                            display: "grid", 
+                            placeItems: "center", 
+                            borderRadius: 12, 
+                            background: "#EAF9F4", 
+                            fontSize: 18, 
+                          }} 
+                        > 
+                          🏘️ 
+                        </div> 
+
+                        <div> 
+                          <h3 
+                            style={{ 
+                              margin: 0, 
+                              color: COLORS.navy, 
+                              fontSize: 14, 
+                              fontWeight: 900, 
+                            }} 
+                          > 
+                            {order.ngoName || "Community NGO"} 
+                          </h3> 
+                          <p 
+                            style={{ 
+                              margin: "3px 0 0", 
+                              color: "#91A0AE", 
+                              fontSize: 10, 
+                            }} 
+                          > 
+                            Verified community partner 
+                          </p> 
+                        </div> 
+                      </div> 
+
+                      <StatusBadge status="Pending" /> 
+                    </div> 
+
+                    <div 
+                      style={{ 
+                        display: "grid", 
+                        gridTemplateColumns: 
+                          "repeat(4,minmax(0,1fr))", 
+                        gap: 8, 
+                        marginTop: 14, 
+                      }} 
+                    > 
+                      {[ 
+                        ["Food", order.foodRequested], 
+                        ["Quantity", `${order.quantity || order.expectedPeople || 0} servings`], 
+                        ["People", `${order.expectedPeople || 0}`], 
+                        ["Contact", order.contactPerson || "—"], 
+                      ].map(([label, value]) => ( 
+                        <div 
+                          key={label} 
+                          style={{ 
+                            padding: "9px 10px", 
+                            borderRadius: 10, 
+                            background: "#F7FAFA", 
+                            border: "1px solid #EEF3F2", 
+                          }} 
+                        > 
+                          <span 
+                            style={{ 
+                              display: "block", 
+                              color: "#91A0AE", 
+                              fontSize: 8, 
+                              fontWeight: 800, 
+                              textTransform: "uppercase", 
+                            }} 
+                          > 
+                            {label} 
+                          </span> 
+                          <strong 
+                            style={{ 
+                              display: "block", 
+                              marginTop: 4, 
+                              color: COLORS.text, 
+                              fontSize: 11, 
+                              whiteSpace: "nowrap", 
+                              overflow: "hidden", 
+                              textOverflow: "ellipsis", 
+                            }} 
+                          > 
+                            {value} 
+                          </strong> 
+                        </div> 
+                      ))} 
+                    </div> 
+
+                    {order.receiverMessage && ( 
+                      <div 
+                        style={{ 
+                          marginTop: 10, 
+                          padding: "10px 12px", 
+                          borderRadius: 10, 
+                          background: "#F1FAF8", 
+                          color: "#617A8A", 
+                          fontSize: 11, 
+                          lineHeight: 1.5, 
+                        }} 
+                      > 
+                        💬 {order.receiverMessage} 
+                      </div> 
+                    )} 
+
+                    <div 
+                      style={{ 
+                        display: "flex", 
+                        gap: 8, 
+                        marginTop: 14, 
+                        flexWrap: "wrap", 
+                      }} 
+                    > 
+                      <button 
+                        onClick={() => { 
+                          setSelectedOrder(order); 
+                          setIsOrderDetailsOpen(true); 
+                        }} 
+                        style={{ 
+                          ...secondaryButton, 
+                          flex: 1, 
+                          minWidth: 110, 
+                        }} 
+                      > 
+                        View Details 
+                      </button> 
+
+                      <button 
+                        onClick={() => 
+                          openAcceptModal(order.id) 
+                        } 
+                        style={{ 
+                          ...primaryButton, 
+                          flex: 1, 
+                          minWidth: 110, 
+                        }} 
+                      > 
+                        Accept Request 
+                      </button> 
+
+                      <button 
+                        onClick={() => 
+                          triggerDecline(order.id) 
+                        } 
+                        style={{ 
+                          ...dangerButton, 
+                          minWidth: 85, 
+                        }} 
+                      > 
+                        Decline 
+                      </button> 
+                    </div> 
+                  </article> 
+                ))} 
+              </div> 
+            )} 
+          </section> 
+        )}
+
+        {/* ===================================================== 
+            4. PAST DONATIONS (ORDER HISTORY)
+            ===================================================== */} 
+        {isHistory && (
+          <section id="past-donations" style={{ marginBottom: 30 }}>
+            <SectionHeader 
+              eyebrow="History" 
+              title="Order History" 
+              description="View your past, completed, and cancelled donations." 
+            />
+            {completedOrders.length === 0 ? (
+              <div style={{ ...cardStyle, padding: "48px 25px", textAlign: "center" }}>
+                <div style={{ fontSize: 32, marginBottom: 10 }}>📦</div>
+                <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 900, color: COLORS.navy }}>No completed orders yet</h3>
+                <p style={{ margin: 0, color: COLORS.muted, fontSize: 12 }}>Completed food pickups and handovers will be archived here.</p>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 }}>
+                {completedOrders.map(order => (
+                  <article key={order.id} style={{ ...cardStyle, padding: 18, borderLeft: `4px solid ${COLORS.green}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                      <h3 style={{ margin: 0, color: COLORS.navy, fontSize: 13, fontWeight: 900 }}>{order.ngoName || "Community Partner"}</h3>
+                      <StatusBadge status={order.status} />
+                    </div>
+                    <p style={{ margin: "0 0 10px", color: COLORS.muted, fontSize: 11 }}>{order.foodRequested}</p>
+                    <div style={{ display: "flex", gap: 15, fontSize: 10, color: COLORS.muted }}>
+                      <span><strong>Qty:</strong> {order.quantity || order.expectedPeople || 0} portions</span>
+                      <span><strong>Date:</strong> {order.orderTime ? new Date(order.orderTime).toLocaleDateString() : "—"}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ===================================================== 
+            5. DELIVERY STATUS & LIVE HANDOVER
+            ===================================================== */} 
+        {isDelivery && (
+          <section id="live-workflow" style={{ marginBottom: 30 }}>
+            <SectionHeader 
+              eyebrow="Live Handover" 
+              title="Delivery Status" 
+              description="Track accepted donations from preparation to volunteer pickup and shelter handover." 
+            />
+
+            {activeOrders.length === 0 ? (
+              <div 
+                style={{ 
+                  ...cardStyle, 
+                  padding: "54px 25px", 
+                  textAlign: "center", 
+                  minHeight: 260,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }} 
+              > 
+                <div 
+                  style={{ 
+                    width: 64, 
+                    height: 64, 
+                    margin: "0 auto 14px", 
+                    display: "grid", 
+                    placeItems: "center", 
+                    borderRadius: 20, 
+                    background: "#EAF9F4", 
+                    fontSize: 30, 
+                  }} 
+                > 
+                  🚚 
+                </div> 
+
+                <h3 
+                  style={{ 
+                    margin: "0 0 8px", 
+                    fontSize: 17, 
+                    fontWeight: 900, 
+                    color: COLORS.navy, 
+                  }} 
+                > 
+                  No active deliveries right now 
+                </h3> 
+
+                <p 
+                  style={{ 
+                    maxWidth: 440, 
+                    margin: "0 auto 18px", 
+                    color: COLORS.muted, 
+                    fontSize: 12, 
+                    lineHeight: 1.6, 
+                  }} 
+                > 
+                  There are currently no active deliveries or courier pickups in progress. Once you accept an incoming request from an NGO, live tracking will appear here. 
+                </p> 
+
+                <button 
+                  onClick={() => navigate("/donor-dashboard/requests")} 
+                  style={{ 
+                    ...primaryButton, 
+                    padding: "10px 20px", 
+                    borderRadius: 10, 
+                    fontSize: 12, 
+                  }} 
+                > 
+                  Review Incoming Requests → 
+                </button> 
+              </div> 
+            ) : ( 
+              <div 
+                style={{ 
+                  display: "grid", 
+                  gridTemplateColumns: "repeat(2,minmax(0,1fr))", 
+                  gap: 14, 
+                }} 
+              > 
+                {activeOrders.map((order) => { 
+                  const orderSteps = [ 
+                    "Accepted", 
+                    "Preparing", 
+                    "Ready for Pickup", 
+                    "Picked Up", 
+                    "Completed", 
+                  ]; 
+
+                  const currentIndex = orderSteps.indexOf(order.status); 
+
+                  return ( 
+                    <article 
+                      key={order.id} 
+                      style={{ 
+                        ...cardStyle, 
+                        padding: 18, 
+                      }} 
+                    > 
+                      <div 
+                        style={{ 
+                          display: "flex", 
+                          justifyContent: "space-between", 
+                          alignItems: "center", 
+                          gap: 12, 
+                        }} 
+                      > 
+                        <div> 
+                          <h3 
+                            style={{ 
+                              margin: 0, 
+                              color: COLORS.navy, 
+                              fontSize: 13, 
+                              fontWeight: 900, 
+                            }} 
+                          > 
+                            {order.ngoName || "Community Partner"} 
+                          </h3> 
+
+                          <p 
+                            style={{ 
+                              margin: "3px 0 0", 
+                              color: COLORS.muted, 
+                              fontSize: 10, 
+                            }} 
+                          > 
+                            {order.foodRequested} 
+                          </p> 
+                        </div> 
+
+                        <StatusBadge status={order.status} /> 
+                      </div> 
+
+                      {/* PROGRESS */} 
+                      <div 
+                        style={{ 
+                          display: "grid", 
+                          gridTemplateColumns: "repeat(5,1fr)", 
+                          gap: 4, 
+                          marginTop: 18, 
+                        }} 
+                      > 
+                        {orderSteps.map((step, index) => { 
+                          const active = index <= currentIndex; 
+
+                          return ( 
+                            <div key={step}> 
+                              <div 
+                                style={{ 
+                                  height: 5, 
+                                  borderRadius: 999, 
+                                  background: active ? COLORS.green : "#E8EFEE", 
+                                }} 
+                              /> 
+
+                              <span 
+                                style={{ 
+                                  display: "block", 
+                                  marginTop: 5, 
+                                  color: active ? COLORS.greenDark : "#9AAAB6", 
+                                  fontSize: 7, 
+                                  lineHeight: 1.25, 
+                                  fontWeight: 800, 
+                                }} 
+                              > 
+                                {step === "Ready for Pickup" 
+                                  ? "READY" 
+                                  : step === "Picked Up" 
+                                  ? "PICKED" 
+                                  : step.toUpperCase()} 
+                              </span> 
+                            </div> 
+                          ); 
+                        })} 
+                      </div> 
+
+                      <div 
+                        style={{ 
+                          display: "grid", 
+                          gridTemplateColumns: "repeat(3,1fr)", 
+                          gap: 7, 
+                          marginTop: 15, 
+                        }} 
+                      > 
+                        <InfoMini 
+                          label="Quantity" 
+                          value={`${order.quantity || order.expectedPeople || 0} portions`} 
+                        /> 
+
+                        <InfoMini 
+                          label="Prep Time" 
+                          value={order.prepTime || "Not set"} 
+                        /> 
+
+                        <InfoMini 
+                          label="Contact" 
+                          value={order.contactPerson || "—"} 
+                        /> 
+                      </div> 
+
+                      <div 
+                        style={{ 
+                          display: "flex", 
+                          gap: 7, 
+                          marginTop: 13, 
+                          flexWrap: "wrap", 
+                        }} 
+                      > 
+                        {order.status === "Accepted" && ( 
+                          <WorkflowButton onClick={() => updateOrderStatus(order.id, "Preparing")}> 
+                            Start Preparing 
+                          </WorkflowButton> 
+                        )} 
+
+                        {order.status === "Preparing" && ( 
+                          <WorkflowButton onClick={() => updateOrderStatus(order.id, "Ready for Pickup")}> 
+                            Mark Ready 
+                          </WorkflowButton> 
+                        )} 
+
+                        {order.status === "Ready for Pickup" && ( 
+                          <WorkflowButton onClick={() => updateOrderStatus(order.id, "Picked Up")}> 
+                            Mark Picked Up 
+                          </WorkflowButton> 
+                        )} 
+
+                        {order.status === "Picked Up" && ( 
+                          <WorkflowButton onClick={() => updateOrderStatus(order.id, "Completed")}> 
+                            Complete Order 
+                          </WorkflowButton> 
+                        )} 
+
+                        {order.status === "Completed" && ( 
+                          <span 
+                            style={{ 
+                              padding: "9px 12px", 
+                              borderRadius: 999, 
+                              background: "#EAF9F4", 
+                              color: COLORS.greenDark, 
+                              fontSize: 10, 
+                              fontWeight: 850, 
+                            }} 
+                          > 
+                            ✓ Successfully Rescued 
+                          </span> 
+                        )} 
+
+                        <button 
+                          onClick={() => { 
+                            setSelectedOrder(order); 
+                            setIsOrderDetailsOpen(true); 
+                          }} 
+                          style={{ 
+                            ...secondaryButton, 
+                            marginLeft: "auto", 
+                            padding: "9px 12px", 
+                          }} 
+                        > 
+                          Details 
+                        </button> 
+                      </div> 
+                    </article> 
+                  ); 
+                })} 
+              </div> 
+            )} 
+          </section> 
+        )}
 
         {/* =====================================================
             ORDER DETAILS MODAL
