@@ -33,7 +33,39 @@ export function MealBridgeProvider({ children }) {
 
   const [donations, setDonations] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      const cached = localStorage.getItem("mealbridge_chat_messages");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return [
+      {
+        id: "msg-demo-1",
+        donationId: "1",
+        orderId: "1",
+        senderId: "receiver",
+        senderRole: "receiver",
+        senderName: "City Hope Kitchen",
+        text: "Hello! We would like to request this meal for our shelter dinner. Is it still available for pickup?",
+        message: "Hello! We would like to request this meal for our shelter dinner. Is it still available for pickup?",
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+      },
+      {
+        id: "msg-demo-2",
+        donationId: "1",
+        orderId: "1",
+        senderId: "donor",
+        senderRole: "donor",
+        senderName: "Fresh Bites Catering",
+        text: "Yes, absolutely! It has been packed in sealed food-grade containers and is ready for pickup.",
+        message: "Yes, absolutely! It has been packed in sealed food-grade containers and is ready for pickup.",
+        timestamp: new Date(Date.now() - 1800000).toISOString(),
+      },
+    ];
+  });
   const [notifications, setNotifications] = useState([]);
   const [isOrgRegistered, setIsOrgRegistered] = useState(false);
   const [orgDetails, setOrgDetails] = useState(null);
@@ -290,6 +322,44 @@ export function MealBridgeProvider({ children }) {
       supabase.removeChannel(messagesChannel);
     };
   }, [user, isSignedIn]);
+
+  // Real-time inter-tab & local storage chat sync
+  useEffect(() => {
+    let bc = null;
+    try {
+      if (typeof window !== "undefined" && window.BroadcastChannel) {
+        bc = new BroadcastChannel("mealbridge_realtime_chat");
+        bc.onmessage = (event) => {
+          if (event.data?.type === "NEW_MESSAGE" && event.data.message) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === event.data.message.id)) return prev;
+              const updated = [...prev, event.data.message];
+              try {
+                localStorage.setItem("mealbridge_chat_messages", JSON.stringify(updated));
+              } catch (e) {}
+              return updated;
+            });
+          }
+        };
+      }
+    } catch (e) {}
+
+    const handleStorage = (e) => {
+      if (e.key === "mealbridge_chat_messages" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setMessages(parsed);
+        } catch (err) {}
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   const registerOrganization = async (details) => {
     if (!user) return;
@@ -645,50 +715,73 @@ export function MealBridgeProvider({ children }) {
     showToast(`Order status updated to ${nextStatus}.`);
   };
 
-  const sendChatMessage = async (orderId, senderId, senderName, text) => {
-    if (!user) return;
+  const sendChatMessage = async (orderOrDonationId, senderRoleOrId, senderName, text) => {
+    if (!text || !text.trim()) return;
+
+    const trimmedText = text.trim();
+    const isReceiver = String(senderRoleOrId).toLowerCase().includes("receiver");
+    const role = isReceiver ? "receiver" : "donor";
+    const resolvedName = senderName || (role === "receiver" ? "City Hope Kitchen" : "Fresh Bites Catering");
+
+    const newMsg = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      donationId: String(orderOrDonationId),
+      orderId: String(orderOrDonationId),
+      senderId: role,
+      senderRole: role,
+      senderName: resolvedName,
+      text: trimmedText,
+      message: trimmedText,
+      timestamp: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    };
+
+    // 1. Immediately update React state for zero-latency local experience
+    setMessages((prev) => {
+      const updated = [...(prev || []), newMsg];
+      try {
+        localStorage.setItem("mealbridge_chat_messages", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    // 2. Broadcast to all open tabs immediately (real-time cross-tab sync)
     try {
-      const { data: orderData, error: orderError } = await supabase
-        .from("orders")
-        .select("id, receiver_id, food_donations(donor_id)")
-        .eq("id", orderId)
-        .single();
-        
-      let targetOrderId = orderId;
-      let targetReceiverId = null;
-
-      if (orderError || !orderData) {
-        // Fallback search by donation_id if orderId was passed as donationId
-        const { data: ordByDonation } = await supabase
-          .from("orders")
-          .select("id, receiver_id, food_donations(donor_id)")
-          .eq("donation_id", orderId)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        if (ordByDonation && ordByDonation.length > 0) {
-          targetOrderId = ordByDonation[0].id;
-          targetReceiverId = user.id === ordByDonation[0].receiver_id ? ordByDonation[0].food_donations.donor_id : ordByDonation[0].receiver_id;
-        } else {
-          console.error("Could not find matching order for chat");
-          return;
-        }
-      } else {
-        targetReceiverId = user.id === orderData.receiver_id ? orderData.food_donations.donor_id : orderData.receiver_id;
+      if (typeof window !== "undefined" && window.BroadcastChannel) {
+        const bc = new BroadcastChannel("mealbridge_realtime_chat");
+        bc.postMessage({ type: "NEW_MESSAGE", message: newMsg });
+        setTimeout(() => bc.close(), 100);
       }
+    } catch (e) {}
 
-      await supabase
-        .from("messages")
-        .insert({
-          order_id: targetOrderId,
-          sender_id: user.id,
-          receiver_id: targetReceiverId,
-          sender_name: senderName,
-          message: text
-        });
+    // 3. Database sync if signed in and valid UUID
+    if (user) {
+      try {
+        if (isUuid(orderOrDonationId)) {
+          const { data: orderData } = await supabase
+            .from("orders")
+            .select("id, receiver_id, food_donations(donor_id)")
+            .eq("id", orderOrDonationId)
+            .maybeSingle();
 
-    } catch (err) {
-      console.error("Error sending message:", err);
+          let targetOrderId = orderOrDonationId;
+          let targetReceiverId = null;
+
+          if (orderData) {
+            targetReceiverId = user.id === orderData.receiver_id ? orderData.food_donations?.donor_id : orderData.receiver_id;
+          }
+
+          await supabase.from("messages").insert({
+            order_id: targetOrderId,
+            sender_id: user.id,
+            receiver_id: targetReceiverId,
+            sender_name: resolvedName,
+            message: trimmedText,
+          });
+        }
+      } catch (err) {
+        console.warn("Supabase message sync notice:", err);
+      }
     }
   };
 
