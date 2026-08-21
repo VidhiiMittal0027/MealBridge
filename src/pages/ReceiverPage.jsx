@@ -2194,58 +2194,135 @@ export default function ReceiverPage() {
           {isOverview && (
             <>
               {/* HERO */}
-              <section className="premium-hero">
-                <div className="hero-content">
-                  <div className="hero-kicker">
+              <section 
+                style={{
+                  position: "relative",
+                  overflow: "hidden",
+                  borderRadius: 28,
+                  padding: "44px 48px",
+                  minHeight: 280,
+                  color: "#FFFFFF",
+                  background: "linear-gradient(135deg, #071A2F 0%, #0B2742 45%, #0C3A50 100%)",
+                  boxShadow: "0 24px 60px rgba(7, 26, 47, 0.16)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  marginBottom: 24
+                }}
+              >
+                {/* Background ambient lighting */}
+                <div style={{
+                  position: "absolute",
+                  width: 380,
+                  height: 380,
+                  borderRadius: "50%",
+                  background: "radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 70%)",
+                  right: "-60px",
+                  top: "-100px",
+                  pointerEvents: "none"
+                }} />
+
+                <div style={{ position: "relative", zIndex: 2, maxWidth: 680 }}>
+                  <div style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 14px",
+                    borderRadius: 999,
+                    background: "rgba(16, 185, 129, 0.18)",
+                    border: "1px solid rgba(52, 211, 153, 0.35)",
+                    color: "#34D399",
+                    fontSize: 10.5,
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    marginBottom: 14
+                  }}>
+                    <Sparkles size={13} color="#34D399" />
                     Food Rescue Command Center
                   </div>
 
-                  <h1 className="hero-title">
-                    Turn surplus into
-                    <br />
-                    <span>real impact.</span>
+                  <h1 style={{
+                    margin: 0,
+                    fontSize: "clamp(2.1rem, 3.8vw, 3.2rem)",
+                    lineHeight: 1.12,
+                    fontWeight: 950,
+                    letterSpacing: "-0.04em",
+                    color: "#FFFFFF"
+                  }}>
+                    Turn surplus into <br />
+                    <span style={{
+                      color: "#34D399",
+                      background: "linear-gradient(90deg, #34D399, #6EE7B7)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent"
+                    }}>
+                      real community impact.
+                    </span>
                   </h1>
 
-                  <p className="hero-description">
-                    Welcome back,{" "}
-                    <strong>
-                      {orgDetails?.orgName ||
-                        user?.firstName ||
-                        "NGO Partner"}
-                    </strong>
-                    . Discover verified surplus food,
-                    connect with donors and get meals to
-                    the people who need them.
+                  <p style={{
+                    margin: "16px 0 26px",
+                    maxWidth: 590,
+                    color: "rgba(255, 255, 255, 0.82)",
+                    fontSize: 14,
+                    lineHeight: 1.65
+                  }}>
+                    Welcome back, <strong style={{ color: "#FFFFFF" }}>{orgDetails?.orgName || user?.firstName || "NGO Partner"}</strong>. Discover verified surplus food, connect with donors, and get meals to community members who need them.
                   </p>
 
-                  <div className="hero-actions">
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
                     <Link
                       to="/receiver-dashboard/browse"
-                      className="hero-primary"
-                      style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+                      style={{
+                        background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                        color: "#FFFFFF",
+                        padding: "13px 22px",
+                        borderRadius: 14,
+                        fontWeight: 900,
+                        fontSize: 13,
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        boxShadow: "0 10px 25px rgba(16, 185, 129, 0.3)",
+                        transition: "all 0.2s ease"
+                      }}
                     >
-                      Find Available Food →
+                      <Utensils size={15} color="#FFFFFF" /> Find Available Food <ArrowRight size={15} color="#FFFFFF" />
                     </Link>
 
                     <Link
                       to="/receiver-dashboard/requests"
-                      className="hero-secondary"
-                      style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+                      style={{
+                        background: "rgba(255, 255, 255, 0.10)",
+                        color: "#FFFFFF",
+                        border: "1px solid rgba(255, 255, 255, 0.22)",
+                        padding: "13px 20px",
+                        borderRadius: 14,
+                        fontWeight: 800,
+                        fontSize: 13,
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        backdropFilter: "blur(10px)"
+                      }}
                     >
                       View My Requests
                     </Link>
                   </div>
                 </div>
 
-                <div className="hero-network">
-                  <div className="network-ring ring-one" />
-                  <div className="network-ring ring-two" />
-                  <div className="network-ring ring-three" />
-                  <div className="network-center">♻</div>
-                  <div className="network-node node-one">🍱</div>
-                  <div className="network-node node-two">🤝</div>
-                  <div className="network-node node-three">❤️</div>
-                  <div className="network-node node-four">📍</div>
+                {/* Graphic Node Orbit on the right */}
+                <div style={{ position: "absolute", right: 40, top: "50%", transform: "translateY(-50%)", width: 220, height: 220, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ position: "absolute", width: 210, height: 210, borderRadius: "50%", border: "1px solid rgba(52, 211, 153, 0.2)" }} />
+                  <div style={{ position: "absolute", width: 140, height: 140, borderRadius: "50%", border: "1px solid rgba(52, 211, 153, 0.3)" }} />
+                  <div style={{ width: 68, height: 68, borderRadius: 22, background: "rgba(52, 211, 153, 0.2)", border: "2px solid rgba(52, 211, 153, 0.4)", display: "grid", placeItems: "center", fontSize: 28, boxShadow: "0 0 35px rgba(52, 211, 153, 0.3)", zIndex: 2 }}>
+                    ♻️
+                  </div>
+                  <div style={{ position: "absolute", top: 8, left: 92, width: 36, height: 36, borderRadius: 12, background: "rgba(255, 255, 255, 0.12)", border: "1px solid rgba(255, 255, 255, 0.25)", display: "grid", placeItems: "center", fontSize: 16, backdropFilter: "blur(6px)" }}>🍱</div>
+                  <div style={{ position: "absolute", right: 8, top: 92, width: 36, height: 36, borderRadius: 12, background: "rgba(255, 255, 255, 0.12)", border: "1px solid rgba(255, 255, 255, 0.25)", display: "grid", placeItems: "center", fontSize: 16, backdropFilter: "blur(6px)" }}>🤝</div>
+                  <div style={{ position: "absolute", bottom: 8, left: 92, width: 36, height: 36, borderRadius: 12, background: "rgba(255, 255, 255, 0.12)", border: "1px solid rgba(255, 255, 255, 0.25)", display: "grid", placeItems: "center", fontSize: 16, backdropFilter: "blur(6px)" }}>❤️</div>
+                  <div style={{ position: "absolute", left: 8, top: 92, width: 36, height: 36, borderRadius: 12, background: "rgba(255, 255, 255, 0.12)", border: "1px solid rgba(255, 255, 255, 0.25)", display: "grid", placeItems: "center", fontSize: 16, backdropFilter: "blur(6px)" }}>📍</div>
                 </div>
               </section>
 
