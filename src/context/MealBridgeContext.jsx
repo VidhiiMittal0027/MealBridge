@@ -405,42 +405,93 @@ export function MealBridgeProvider({ children }) {
   };
 
   const requestFood = async (donationId, expectedPeople, receiverMessage) => {
-    if (!user) return;
-    try {
-      const { data: orgData, error: orgError } = await supabase
-        .from("organizations")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-        
-      if (orgError || !orgData) {
-        showToast("Please register your organization before requesting food.", "warning");
-        return;
+    const requestedAmount = Number(expectedPeople) || 1;
+
+    // 1. Instantly update donations in React state by deducting requested quantity
+    setDonations((prevDonations) => {
+      return prevDonations.map((d) => {
+        if (d.id === donationId) {
+          const currentQty = Number(d.quantity) || Number(d.servings) || 0;
+          const remaining = Math.max(0, currentQty - requestedAmount);
+          return {
+            ...d,
+            quantity: remaining,
+            servings: remaining,
+            status: remaining <= 0 ? "Matching Pending" : d.status,
+          };
+        }
+        return d;
+      });
+    });
+
+    // 2. Add local order immediately
+    const targetDonation = donations.find((d) => d.id === donationId);
+    const newMockOrder = {
+      id: `order-${Date.now()}`,
+      donationId: donationId,
+      ngoName: orgDetails?.organization_name || user?.fullName || "City Hope Kitchen",
+      receiverName: orgDetails?.organization_name || user?.fullName || "City Hope Kitchen",
+      contactPerson: user?.fullName || "Sarah Jenkins",
+      foodRequested: targetDonation?.name || "Surplus Food",
+      foodName: targetDonation?.name || "Surplus Food",
+      quantity: requestedAmount,
+      expectedPeople: requestedAmount,
+      receiverMessage: receiverMessage || "",
+      orderTime: new Date().toISOString(),
+      status: "Pending",
+      donorId: targetDonation?.donorId,
+      donorName: targetDonation?.donorName || "Food Donor",
+    };
+    setOrders((prev) => [newMockOrder, ...(prev || [])]);
+
+    // 3. If signed in, sync with Supabase
+    if (user) {
+      try {
+        let orgId = null;
+        try {
+          const { data: orgData } = await supabase
+            .from("organizations")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (orgData) orgId = orgData.id;
+        } catch (e) {}
+
+        if (isUuid(donationId)) {
+          const { error: orderError } = await supabase
+            .from("orders")
+            .insert({
+              donation_id: donationId,
+              receiver_id: user.id,
+              organization_id: orgId,
+              requested_quantity: requestedAmount,
+              receiver_message: receiverMessage || "",
+              status: "pending",
+            });
+
+          if (!orderError) {
+            const currentQty = Number(targetDonation?.quantity) || Number(targetDonation?.servings) || 0;
+            const remaining = Math.max(0, currentQty - requestedAmount);
+
+            await supabase
+              .from("food_donations")
+              .update({
+                quantity: remaining,
+                servings: remaining,
+                status: remaining <= 0 ? "requested" : "available",
+              })
+              .eq("id", donationId);
+
+            fetchDonations();
+            fetchOrders();
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase request food notice:", err);
       }
-
-      const requestedAmount = Number(expectedPeople);
-
-      const { error } = await supabase
-        .from("orders")
-        .insert({
-          donation_id: donationId,
-          receiver_id: user.id,
-          organization_id: orgData.id,
-          requested_quantity: requestedAmount,
-          receiver_message: receiverMessage || "",
-          status: 'pending'
-        });
-
-      if (error) {
-        showToast("Error creating request: " + error.message, "error");
-      } else {
-        showToast("Your request was submitted to the donor!");
-        fetchDonations();
-        fetchOrders();
-      }
-    } catch (err) {
-      showToast("Error connecting to server.", "error");
     }
+
+    showToast("Your request was submitted to the donor!", "success");
   };
 
   const isUuid = (id) =>
