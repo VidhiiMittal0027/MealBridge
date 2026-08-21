@@ -2867,7 +2867,7 @@ export default function DonorDashboard() {
         {/* ===================================================== 
             2. MY LISTINGS (FOOD INVENTORY)
             ===================================================== */} 
-        {isListings && (
+        {(isOverview || isListings) && (
           <section 
             id="active-listings" 
             style={{ 
